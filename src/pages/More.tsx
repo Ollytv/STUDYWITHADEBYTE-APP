@@ -105,7 +105,7 @@ export default function More() {
           </motion.h1>
           <motion.p className="text-xs text-dark-400"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
-            Productivity tools for POLYIBADAN students
+            Productivity tools for All students.
           </motion.p>
         </div>
       </div>
