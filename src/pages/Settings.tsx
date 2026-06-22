@@ -13,7 +13,7 @@ import { Input, Select } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { requestNotificationPermission } from '../services/notifications';
 import { exportAllData, clearAllData } from '../services/db';
-import { StudentProfile, ProgramLevel, Semester } from '../types';
+import { StudentProfile, ProgramLevel, Semester, PROGRAM_LEVEL_META, DEFAULT_PROGRAM_LEVEL } from '../types';
 
 const DEPARTMENTS = [
   'Computer Science','Business Administration','Accountancy',
@@ -21,7 +21,10 @@ const DEPARTMENTS = [
   'Mass Communication','Public Administration','Marketing','Banking & Finance',
   'Science Laboratory Technology','Statistics','Architecture','Quantity Surveying','Other',
 ];
-const LEVELS: ProgramLevel[] = ['ND1','ND2','HND1','HND2','Part-Time ND1','Part-Time ND2','Part-Time HND1','Part-Time HND2'];
+
+// Derived from PROGRAM_LEVEL_META — adding a new level in index.ts
+// automatically appears here. No manual sync needed.
+const LEVEL_OPTIONS = PROGRAM_LEVEL_META.map(m => ({ value: m.value, label: m.label }));
 
 // ── Download helper ────────────────────────────────────────────────────────
 function downloadAsText(filename: string, content: string) {
@@ -307,7 +310,7 @@ export default function Settings() {
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
   const [profileForm, setProfileForm] = useState<Partial<StudentProfile>>(profile || {
-    fullName:'', department:'', programLevel:'ND1', matricNumber:'',
+    fullName:'', department:'', programLevel: DEFAULT_PROGRAM_LEVEL, matricNumber:'',
     semesterStartDate:'', semesterEndDate:'', targetAttendance:75,
     currentSemester:'First',
     currentAcademicYear:`${new Date().getFullYear()}/${new Date().getFullYear()+1}`,
@@ -322,7 +325,7 @@ export default function Settings() {
 
   const openProfile = () => {
     setProfileForm(profile ? { ...profile } : {
-      fullName:'', department:'', programLevel:'ND1', matricNumber:'',
+      fullName:'', department:'', programLevel: DEFAULT_PROGRAM_LEVEL, matricNumber:'',
       semesterStartDate:'', semesterEndDate:'', targetAttendance:75,
       currentSemester:'First',
       currentAcademicYear:`${new Date().getFullYear()}/${new Date().getFullYear()+1}`,
@@ -344,7 +347,7 @@ export default function Settings() {
       await saveProfile({
         fullName: profileForm.fullName!.trim(),
         department: profileForm.department || '',
-        programLevel: (profileForm.programLevel || 'ND1') as ProgramLevel,
+        programLevel: (profileForm.programLevel || DEFAULT_PROGRAM_LEVEL) as ProgramLevel,
         matricNumber: profileForm.matricNumber || '',
         semesterStartDate: profileForm.semesterStartDate || new Date().toISOString().split('T')[0],
         semesterEndDate: profileForm.semesterEndDate || '',
@@ -496,7 +499,7 @@ Q: How do I reset my password?
 A: Go to the login screen and tap "Forgot Password". Enter your email and we'll send a reset link.
 
 Q: How does GPA tracking work?
-A: Enter your course grades and credit units. StudiByte calculates your GPA using the POLYIBADAN 5-point grading scale automatically.
+A: Enter your course grades and credit units. StudiByte calculates your GPA automatically. The grading scale can be configured to match your institution's system.
 
 Q: How do reminders work?
 A: Enable notifications in Settings. StudiByte will alert you 10 minutes, 30 minutes, or 1 hour before each class.
@@ -739,7 +742,7 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
           <LegalP>Founded by Adegbite Olaoluwa, popularly known as ADEBYTE TECH, StudiByte was created from a passion for technology and impacting knowledge positively. ADEBYTE TECH is a Web/App Developer who has partnered with thousands of business owners and educationists to create impactful digital solutions and educational experiences.</LegalP>
         </div>
         <LegalH2 color="#fbbf24">What We Offer</LegalH2>
-        <LegalList items={['GPA Tracking — POLYIBADAN 5-point grading scale','Study Timer — Pomodoro technique for focused sessions','Assignment Management — Track all deadlines in one place','Attendance Tracking — Never fall below 75%','Course Materials — Upload PDFs, images, notes and links','Smart Reminders — Get notified before every class','AI-powered study assistance (coming soon)']} />
+        <LegalList items={['GPA Tracking — Supports multiple grading scales','Study Timer — Pomodoro technique for focused sessions','Assignment Management — Track all deadlines in one place','Attendance Tracking — Never fall below your target percentage','Course Materials — Upload PDFs, images, notes and links','Smart Reminders — Get notified before every class','AI-powered study assistance (coming soon)']} />
         <LegalH2 color="#fbbf24">Our Mission</LegalH2>
         <LegalP>StudiByte aims to empower students with the tools they need to succeed academically, stay organized, and build productive habits that last beyond university.</LegalP>
         <div className="rounded-2xl p-4 mt-2" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
@@ -794,7 +797,7 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
         <div className="space-y-2">
           {[
             { q: 'How do I reset my password?', a: 'Go to the login screen and tap "Forgot Password". Enter your registered email address and we\'ll send you a password reset link within a few minutes. Check your spam folder if you don\'t see it.' },
-            { q: 'How does GPA tracking work?', a: 'Navigate to More → GPA Tracker. Add your courses with their credit units and grades. StudiByte automatically calculates your GPA using the POLYIBADAN 5-point grading scale and shows your semester and cumulative GPA.' },
+            { q: 'How does GPA tracking work?', a: 'Navigate to More → GPA Tracker. Add your courses with their credit units and grades. StudiByte automatically calculates your GPA and shows your semester and cumulative GPA. The grading scale can be configured to match your institution.' },
             { q: 'How do class reminders work?', a: 'Enable notifications in Settings → Notifications. Choose your preferred reminder times (10 mins, 30 mins, or 1 hour before class). StudiByte will send you a push notification before each scheduled class.' },
             { q: 'Can I use the app offline?', a: 'Yes! StudiByte uses Firebase offline caching, which means you can view your timetable, assignments, and other data without an internet connection. Any changes you make offline will automatically sync to the cloud when you reconnect.' },
             { q: 'What are premium features?', a: 'Premium features include unlimited course materials storage, advanced attendance analytics, priority customer support, and early access to new features like AI-powered study assistance. Free accounts get generous limits for all core features.' },
@@ -900,11 +903,11 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
               onChange={e => { const f = e.target.files?.[0]; if (f) handleAvatarChange(f); }} />
           </div>
           <Input label="Full Name" value={profileForm.fullName || ''} onChange={v => setP('fullName', v)} placeholder="e.g. Adebayo Johnson" required />
-          <Input label="Matric Number" value={profileForm.matricNumber || ''} onChange={v => setP('matricNumber', v)} placeholder="e.g. ND/2023/001" />
+          <Input label="Matric / Student ID" value={profileForm.matricNumber || ''} onChange={v => setP('matricNumber', v)} placeholder="e.g. STU/2023/001" />
           <Select label="Department" value={profileForm.department || ''} onChange={v => setP('department', v)}
             options={[{ value: '', label: 'Select department...' }, ...DEPARTMENTS.map(d => ({ value: d, label: d }))]} />
-          <Select label="Program Level" value={profileForm.programLevel || 'ND1'} onChange={v => setP('programLevel', v)}
-            options={LEVELS.map(l => ({ value: l, label: l }))} />
+          <Select label="Academic Level" value={profileForm.programLevel || DEFAULT_PROGRAM_LEVEL} onChange={v => setP('programLevel', v as ProgramLevel)}
+            options={[{ value: '', label: 'Select level...' }, ...LEVEL_OPTIONS]} />
           <Select label="Current Semester" value={profileForm.currentSemester || 'First'} onChange={v => setP('currentSemester', v)}
             options={[{ value: 'First', label: 'First Semester' }, { value: 'Second', label: 'Second Semester' }]} />
           <div className="grid grid-cols-2 gap-3">

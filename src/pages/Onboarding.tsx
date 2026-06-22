@@ -4,7 +4,7 @@ import { BookOpen, CalendarDays, CheckCircle, Bell, ArrowRight, Sparkles } from 
 import { useStore } from '../hooks/useStore';
 import { Input, Select } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
-import { ProgramLevel } from '../types';
+import { ProgramLevel, PROGRAM_LEVEL_META, DEFAULT_PROGRAM_LEVEL } from '../types';
 import { requestNotificationPermission } from '../services/notifications';
 
 const DEPARTMENTS = [
@@ -13,10 +13,9 @@ const DEPARTMENTS = [
   'Mass Communication','Public Administration','Marketing','Banking & Finance',
   'Science Laboratory Technology','Statistics','Architecture','Quantity Surveying','Other',
 ];
-const LEVELS: ProgramLevel[] = [
-  'ND1','ND2','HND1','HND2',
-  'Part-Time ND1','Part-Time ND2','Part-Time HND1','Part-Time HND2',
-];
+// Derived from PROGRAM_LEVEL_META — adding a level in index.ts
+// automatically appears here. No manual sync needed.
+const LEVEL_OPTIONS = PROGRAM_LEVEL_META.map(m => ({ value: m.value, label: m.label }));
 
 const slides = [
   { icon: BookOpen,    title: 'Welcome to\nSTUDIBYTE', sub: 'Your all-in-one smart academic companion built for students.', color: 'from-green-500/20 to-emerald-600/10', accent: '#22c55e', iconBg: 'rgba(34,197,94,0.12)',   iconBorder: 'rgba(34,197,94,0.25)' },
@@ -34,7 +33,7 @@ export default function Onboarding() {
 
   const [fullName, setFullName]         = useState('');
   const [department, setDepartment]     = useState('');
-  const [programLevel, setProgramLevel] = useState<ProgramLevel>('ND1');
+  const [programLevel, setProgramLevel] = useState<ProgramLevel>(DEFAULT_PROGRAM_LEVEL);
   const [formError, setFormError]       = useState('');
 
   const isLast = step === slides.length - 1;
@@ -137,10 +136,10 @@ export default function Onboarding() {
             ]}
           />
           <Select
-            label="Program Level"
+            label="Academic Level"
             value={programLevel}
             onChange={v => setProgramLevel(v as ProgramLevel)}
-            options={LEVELS.map(l => ({ value: l, label: l }))}
+            options={LEVEL_OPTIONS}
           />
         </div>
 

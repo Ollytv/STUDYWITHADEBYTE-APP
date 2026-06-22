@@ -1,5 +1,72 @@
 export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
-export type ProgramLevel = 'ND1' | 'ND2' | 'HND1' | 'HND2' | 'Part-Time ND1' | 'Part-Time ND2' | 'Part-Time HND1' | 'Part-Time HND2';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACADEMIC LEVEL SYSTEM
+// Global, institution-agnostic structure that supports both local and
+// international schools. Add new values here to extend — no other file breaks.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Primary year-based levels (used by most degree/diploma programmes) */
+export type PrimaryLevel =
+  | 'Foundation'   // Pre-degree / foundation year
+  | 'Year 1'       // Level 100
+  | 'Year 2'       // Level 200
+  | 'Year 3'       // Level 300
+  | 'Year 4';      // Level 400 — optional extended programme
+
+/** Short certificate/diploma levels (sub-degree, vocational, professional) */
+export type ProgrammeLevel =
+  | 'Certificate'
+  | 'Diploma'
+  | 'Advanced Diploma';
+
+/**
+ * Combined union used wherever a student's academic level is stored.
+ * Keeping PrimaryLevel and ProgrammeLevel separate lets you filter
+ * by category (e.g. show only year-based levels in a timetable filter)
+ * without a breaking change.
+ */
+export type ProgramLevel = PrimaryLevel | ProgrammeLevel;
+
+/**
+ * Metadata for every level — used to build dropdowns, labels, and
+ * filter chips without scattering magic strings across the codebase.
+ * Add a new entry here to introduce a new level everywhere at once.
+ */
+export interface ProgramLevelMeta {
+  value: ProgramLevel;
+  label: string;         // User-facing display name
+  shortLabel: string;    // Compact label for chips / badges
+  category: 'primary' | 'programme';
+  levelCode?: string;    // e.g. "100", "200" — undefined for non-year levels
+}
+
+export const PROGRAM_LEVEL_META: ProgramLevelMeta[] = [
+  // ── Primary levels ────────────────────────────────────────────────────
+  { value: 'Foundation',     label: 'Foundation / Pre-degree', shortLabel: 'Foundation', category: 'primary' },
+  { value: 'Year 1',         label: 'Year 1 (Level 100)',       shortLabel: 'Year 1',     category: 'primary', levelCode: '100' },
+  { value: 'Year 2',         label: 'Year 2 (Level 200)',       shortLabel: 'Year 2',     category: 'primary', levelCode: '200' },
+  { value: 'Year 3',         label: 'Year 3 (Level 300)',       shortLabel: 'Year 3',     category: 'primary', levelCode: '300' },
+  { value: 'Year 4',         label: 'Year 4 (Level 400)',       shortLabel: 'Year 4',     category: 'primary', levelCode: '400' },
+  // ── Programme levels ──────────────────────────────────────────────────
+  { value: 'Certificate',    label: 'Certificate Level',        shortLabel: 'Cert',       category: 'programme' },
+  { value: 'Diploma',        label: 'Diploma Level',            shortLabel: 'Diploma',    category: 'programme' },
+  { value: 'Advanced Diploma', label: 'Advanced Diploma Level', shortLabel: 'Adv. Dip',  category: 'programme' },
+];
+
+/** All valid ProgramLevel values as a plain array — useful for runtime validation. */
+export const ALL_PROGRAM_LEVELS: ProgramLevel[] = PROGRAM_LEVEL_META.map(m => m.value);
+
+/** Default level assigned to new profiles. */
+export const DEFAULT_PROGRAM_LEVEL: ProgramLevel = 'Year 1';
+
+/** Look up display metadata for any level value. */
+export function getProgramLevelMeta(value: ProgramLevel): ProgramLevelMeta {
+  return PROGRAM_LEVEL_META.find(m => m.value === value) ?? PROGRAM_LEVEL_META[1];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export type ColorLabel = 'green' | 'blue' | 'purple' | 'orange' | 'red' | 'yellow' | 'pink' | 'cyan' | 'teal' | 'indigo';
 export type Semester = 'First' | 'Second';
 export type TabRoute = 'dashboard' | 'timetable' | 'attendance' | 'more' | 'settings' | 'gpa' | 'timer' | 'assignments' | 'materials' | 'import';
