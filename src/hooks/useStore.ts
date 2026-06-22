@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import {
   CourseClass, AttendanceRecord, StudentProfile, AppSettings,
   GPACourse, Assignment, StudySession, CourseMaterial, TabRoute, Semester,
+  DEFAULT_PROGRAM_LEVEL,
 } from '../types';
 import * as db from '../services/db';
 import { signUp as fbSignUp, signIn as fbSignIn, signOut as fbSignOut, onAuthChange, AuthUser } from '../services/auth';
@@ -284,7 +285,7 @@ export const useStore = create<AppState>()(
           endTime: cls.endTime || '09:00',
           venue: cls.venue || 'TBD',
           department: cls.department || profile?.department || '',
-          programLevel: cls.programLevel || profile?.programLevel || 'ND1',
+          programLevel: cls.programLevel || profile?.programLevel || DEFAULT_PROGRAM_LEVEL,
           colorLabel: cls.colorLabel || 'green',
           totalClassesHeld: 0, totalClassesAttended: 0, attendancePercentage: 0,
           semester: activeSemester, academicYear: activeAcademicYear,
