@@ -1,4 +1,4 @@
-import { CourseClass, DayOfWeek, ColorLabel, ImportResult } from '../types';
+import { CourseClass, DayOfWeek, ColorLabel, ImportResult, ProgramLevel, DEFAULT_PROGRAM_LEVEL } from '../types';
 import { generateId } from '../utils/id';
 
 // Days of week for detection
@@ -91,7 +91,7 @@ function extractCourseCode(line: string): string | null {
 }
 
 // Parse raw timetable text into structured classes
-export function parseTimetableText(text: string, department = '', programLevel = 'ND1'): Partial<CourseClass>[] {
+export function parseTimetableText(text: string, department = '', programLevel: ProgramLevel = DEFAULT_PROGRAM_LEVEL): Partial<CourseClass>[] {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
   const classes: Partial<CourseClass>[] = [];
 
@@ -146,7 +146,7 @@ export function parseTimetableText(text: string, department = '', programLevel =
       venue: venue.substring(0, 40),
       lecturer: 'TBD',
       department,
-      programLevel: programLevel as any,
+      programLevel,
       colorLabel: assignColor(colorIndex++),
       totalClassesHeld: 0,
       totalClassesAttended: 0,

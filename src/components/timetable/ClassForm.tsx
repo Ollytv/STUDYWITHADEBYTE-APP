@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CourseClass, DayOfWeek, ProgramLevel, ColorLabel } from '../../types';
+import { CourseClass, DayOfWeek, ProgramLevel, ColorLabel, PROGRAM_LEVEL_META, DEFAULT_PROGRAM_LEVEL } from '../../types';
 import { useStore } from '../../hooks/useStore';
 import { Modal } from '../ui/Modal';
 import { Input, Select, TextArea } from '../ui/Input';
@@ -7,11 +7,11 @@ import { Button } from '../ui/Button';
 import { COLOR_OPTIONS } from '../../utils/colors';
 
 const DAYS: DayOfWeek[] = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-const LEVELS: ProgramLevel[] = ['ND1','ND2','HND1','HND2','Part-Time ND1','Part-Time ND2','Part-Time HND1','Part-Time HND2'];
+const LEVEL_OPTIONS = PROGRAM_LEVEL_META.map(m => ({ value: m.value, label: m.label }));
 const DEPARTMENTS = ['Computer Science','Business Administration','Accountancy','Electrical/Electronics Engineering','Mechanical Engineering','Civil Engineering','Mass Communication','Public Administration','Marketing','Banking & Finance','Science Laboratory Technology','Statistics','Architecture','Quantity Surveying','Other'];
 
 function emptyForm(): Partial<CourseClass> {
-  return { courseName:'', courseCode:'', lecturer:'', day:'Monday', startTime:'08:00', endTime:'10:00', venue:'', department:'', programLevel:'ND1', colorLabel:'green', notes:'' };
+  return { courseName:'', courseCode:'', lecturer:'', day:'Monday', startTime:'08:00', endTime:'10:00', venue:'', department:'', programLevel: DEFAULT_PROGRAM_LEVEL, colorLabel:'green', notes:'' };
 }
 
 export function ClassForm({ isOpen, onClose, editClass }: { isOpen: boolean; onClose: () => void; editClass?: CourseClass | null }) {
@@ -22,7 +22,7 @@ export function ClassForm({ isOpen, onClose, editClass }: { isOpen: boolean; onC
   useEffect(() => {
     if (isOpen) {
       if (editClass) setForm(editClass);
-      else setForm({ ...emptyForm(), department: profile?.department || '', programLevel: profile?.programLevel || 'ND1' });
+      else setForm({ ...emptyForm(), department: profile?.department || '', programLevel: profile?.programLevel || DEFAULT_PROGRAM_LEVEL });
     }
   }, [editClass, isOpen, profile]);
 
@@ -44,7 +44,7 @@ export function ClassForm({ isOpen, onClose, editClass }: { isOpen: boolean; onC
           endTime: form.endTime || '10:00',
           venue: form.venue || 'TBD',
           department: form.department || '',
-          programLevel: (form.programLevel || 'ND1') as ProgramLevel,
+          programLevel: (form.programLevel || DEFAULT_PROGRAM_LEVEL) as ProgramLevel,
           colorLabel: (form.colorLabel || 'green') as ColorLabel,
           totalClassesHeld: 0, totalClassesAttended: 0, attendancePercentage: 0,
           notes: form.notes || '',
@@ -83,8 +83,8 @@ export function ClassForm({ isOpen, onClose, editClass }: { isOpen: boolean; onC
           <p className="text-xs font-body font-semibold text-dark-400 uppercase tracking-wider">Academic Info</p>
           <Select label="Department" value={form.department || ''}  onChange={v => set('department', v)}
             options={[{ value: '', label: 'Select department...' }, ...DEPARTMENTS.map(d => ({ value: d, label: d }))]} />
-          <Select label="Program Level" value={form.programLevel || 'ND1'} onChange={v => set('programLevel', v)}
-            options={LEVELS.map(l => ({ value: l, label: l }))} />
+          <Select label="Academic Level" value={form.programLevel || DEFAULT_PROGRAM_LEVEL} onChange={v => set('programLevel', v)}
+            options={LEVEL_OPTIONS} />
         </div>
 
         <div className="space-y-3">
