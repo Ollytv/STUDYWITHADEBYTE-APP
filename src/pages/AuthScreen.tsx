@@ -248,7 +248,7 @@ const validate = (): string => {
       </AnimatePresence>
 
       <p className="text-center text-xs text-dark-600 font-body mt-auto pt-8">
-        Made with 💚 for POLYIBADAN students
+        Made with 💚 for Students
       </p>
     </motion.div>
   );
