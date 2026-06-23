@@ -286,13 +286,21 @@ export async function saveProfile(profile: StudentProfile): Promise<void> {
     avatarUrl = await uploadDataUrl(avatarUrl, `avatars/${uid()}/profile.jpg`);
   }
 
-  // Enforce field length limits on profile data
+  // Enforce field length limits on profile data.
+  // cgpaScale is coerced to a number here as a safety net — the Select onChange
+  // returns a string from the DOM, and even after parseFloat in Settings.tsx
+  // the value can arrive as a string if any intermediate handler loses the type.
+  // Storing it as a number is required for arithmetic in normaliseGPA().
   const profileToSave: StudentProfile = {
     ...profile,
-    avatar:      avatarUrl,
-    fullName:    truncate(profile.fullName,    LIMITS.fullName),
-    department:  truncate(profile.department,  LIMITS.department),
+    avatar:       avatarUrl,
+    fullName:     truncate(profile.fullName,     LIMITS.fullName),
+    department:   truncate(profile.department,   LIMITS.department),
     matricNumber: truncate(profile.matricNumber, LIMITS.matricNumber),
+    // Force numeric — guards against string "3.0"/"4.0"/"5.0" from form layer
+    ...(profile.cgpaScale !== undefined
+      ? { cgpaScale: Number(profile.cgpaScale) as StudentProfile['cgpaScale'] }
+      : {}),
   };
 
   await setDoc(userDoc('meta', 'profile'), stripUndefined(profileToSave), { merge: true });
@@ -302,6 +310,8 @@ export async function saveProfile(profile: StudentProfile): Promise<void> {
       fullName:     profileToSave.fullName,
       department:   profileToSave.department,
       programLevel: profileToSave.programLevel,
+      // Keep the user root doc in sync so any server-side queries on scale work
+      ...(profileToSave.cgpaScale !== undefined ? { cgpaScale: profileToSave.cgpaScale } : {}),
       updatedAt:    serverTimestamp(),
     },
     { merge: true }

@@ -350,6 +350,10 @@ export default function Settings() {
         fullName: profileForm.fullName!.trim(),
         department: profileForm.department || '',
         programLevel: (profileForm.programLevel || DEFAULT_PROGRAM_LEVEL) as ProgramLevel,
+        // Number() coercion is the critical fix: Select onChange returns a string
+        // from the DOM even after parseFloat — this guarantees a numeric value
+        // is always written to Firestore, never the string "3", "4", or "5".
+        cgpaScale: Number(profileForm.cgpaScale ?? DEFAULT_CGPA_SCALE) as CgpaScale,
         matricNumber: profileForm.matricNumber || '',
         semesterStartDate: profileForm.semesterStartDate || new Date().toISOString().split('T')[0],
         semesterEndDate: profileForm.semesterEndDate || '',

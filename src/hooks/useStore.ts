@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import {
   CourseClass, AttendanceRecord, StudentProfile, AppSettings,
   GPACourse, Assignment, StudySession, CourseMaterial, TabRoute, Semester,
-  DEFAULT_PROGRAM_LEVEL,
+  DEFAULT_PROGRAM_LEVEL, DEFAULT_CGPA_SCALE,
 } from '../types';
 import * as db from '../services/db';
 import { signUp as fbSignUp, signIn as fbSignIn, signOut as fbSignOut, onAuthChange, AuthUser } from '../services/auth';
@@ -21,6 +21,23 @@ const DEFAULT_SETTINGS: AppSettingsExtended = {
 };
 
 const PERSIST_KEY = 'studywithadebyte-v3';
+
+/**
+ * Coerce any fields that must be numeric but may have been stored as strings
+ * due to the Select → onChange → string pipeline.
+ * Specifically: cgpaScale comes back as "3", "4", or "5" from the DOM and
+ * may have been written to Firestore as a string before this fix was applied.
+ * Calling Number() here heals both old and new documents transparently.
+ */
+function normaliseProfile(p: StudentProfile | undefined): StudentProfile | undefined {
+  if (!p) return p;
+  return {
+    ...p,
+    cgpaScale: p.cgpaScale !== undefined
+      ? (Number(p.cgpaScale) as StudentProfile['cgpaScale'])
+      : DEFAULT_CGPA_SCALE,
+  };
+}
 
 // Only used to persist theme preference across sessions — nothing routing-critical
 function patchPersistedSettings(patch: Partial<AppSettingsExtended>) {
@@ -226,7 +243,7 @@ export const useStore = create<AppState>()(
           set({
             classes, gpaCourses, assignments, studySessions, materials,
             attendance: attendanceArrays.flat(),
-            profile: profile || null,
+          profile: normaliseProfile(profile || undefined) || null,
             settings: {
               ...DEFAULT_SETTINGS,
               ...(dbSettings || {}),
@@ -394,14 +411,11 @@ export const useStore = create<AppState>()(
       },
 
       saveProfile: async profile => {
-        // db.saveProfile uploads avatar to Firebase Storage and replaces
-        // the base64 data URL with the real Storage download URL.
-        // We must re-read the profile from Firestore AFTER the save so
-        // the store holds the resolved Storage URL, not the raw base64.
         await db.saveProfile(profile);
         const saved = await db.getProfile();
+        const resolved = normaliseProfile(saved || profile);
         set({
-          profile: saved || profile,
+          profile: resolved || null,
           hasProfile: true,
           activeSemester: profile.currentSemester,
           activeAcademicYear: profile.currentAcademicYear,
