@@ -60,6 +60,32 @@ export const ALL_PROGRAM_LEVELS: ProgramLevel[] = PROGRAM_LEVEL_META.map(m => m.
 /** Default level assigned to new profiles. */
 export const DEFAULT_PROGRAM_LEVEL: ProgramLevel = 'Year 1';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CGPA SCALE SYSTEM
+// Supports multiple school grading scales. Add a new value here to extend.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** The maximum GPA value used by the student's school. */
+export type CgpaScale = 3.0 | 4.0 | 5.0;
+
+export interface CgpaScaleOption {
+  value: CgpaScale;
+  label: string;   // e.g. "5.0 Scale"
+  display: string; // e.g. "/ 5.0"
+}
+
+export const CGPA_SCALE_OPTIONS: CgpaScaleOption[] = [
+  { value: 3.0, label: '3.0 Scale', display: '/ 3.0' },
+  { value: 4.0, label: '4.0 Scale', display: '/ 4.0' },
+  { value: 5.0, label: '5.0 Scale', display: '/ 5.0' },
+];
+
+/**
+ * Default scale for existing users who pre-date this feature.
+ * 5.0 preserves the previous hardcoded behaviour — no data loss.
+ */
+export const DEFAULT_CGPA_SCALE: CgpaScale = 5.0;
+
 /** Look up display metadata for any level value. */
 export function getProgramLevelMeta(value: ProgramLevel): ProgramLevelMeta {
   return PROGRAM_LEVEL_META.find(m => m.value === value) ?? PROGRAM_LEVEL_META[1];
@@ -152,6 +178,8 @@ export interface StudentProfile {
   fullName: string;
   department: string;
   programLevel: ProgramLevel;
+  /** School CGPA scale. Optional so existing Firestore docs without it still load. */
+  cgpaScale?: CgpaScale;
   matricNumber?: string;
   email?: string;
   avatar?: string;

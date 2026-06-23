@@ -6,14 +6,15 @@ import { ClassCard } from '../components/timetable/ClassCard';
 import { ProgressRing } from '../components/ui/ProgressRing';
 import { Button } from '../components/ui/Button';
 import { getCurrentDayName, sortClassesByTime, formatCountdown, getMinutesUntilClass, isClassNow } from '../utils/time';
-import { calculateGPA, getGPAClass } from '../utils/gpa';
+import { calculateGPA, getGPAClass, normaliseGPA } from '../utils/gpa';
+import { DEFAULT_CGPA_SCALE, CgpaScale } from '../types';
 
 const MOTIVATIONS = [
   { text: "Keep pushing — your future self will thank you!", emoji: "🚀" },
   { text: "Consistency beats perfection. Show up today!", emoji: "🔥" },
   { text: "Every class attended is an investment in your future.", emoji: "⚡" },
   { text: "One step closer to graduation. Keep going!", emoji: "💪" },
-  { text: "POLYIBADAN best! Study hard, shine bright!", emoji: "🌟" },
+  { text: "Study hard, shine bright — the best is yet to come!", emoji: "🌟" },
   { text: "Small daily progress leads to massive results.", emoji: "🎯" },
   { text: "Your dedication today shapes your tomorrow.", emoji: "✨" },
 ];
@@ -30,6 +31,9 @@ export default function Dashboard() {
   const { classes, profile, assignments, gpaCourses, studySessions,
     setActiveTab, setShowAddClass, markAttendance, setEditingClass,
     activeSemester, activeAcademicYear } = useStore();
+
+  // Resolve school scale — falls back to 5.0 for users who pre-date this feature
+  const scale: CgpaScale = profile?.cgpaScale ?? DEFAULT_CGPA_SCALE;
 
   const today = getCurrentDayName();
   const todayClasses = useMemo(() =>
@@ -58,8 +62,9 @@ export default function Dashboard() {
     gpaCourses.filter(c => c.semester === activeSemester && c.academicYear === activeAcademicYear),
     [gpaCourses, activeSemester, activeAcademicYear]);
 
-  const gpa      = useMemo(() => calculateGPA(semGPACourses), [semGPACourses]);
-  const gpaClass = getGPAClass(gpa);
+  const rawGpa   = useMemo(() => calculateGPA(semGPACourses), [semGPACourses]);
+  const gpa      = normaliseGPA(rawGpa, scale);
+  const gpaClass = getGPAClass(gpa, scale);
 
   const pendingAssignments = useMemo(() =>
     assignments.filter(a => !a.completed && a.semester === activeSemester && a.academicYear === activeAcademicYear).length,
@@ -118,7 +123,7 @@ export default function Dashboard() {
               >
                 {profile?.department
                   ? `${profile.department} • ${profile.programLevel}`
-                  : `POLYIBADAN • ${activeSemester} Semester`}
+                  : `${activeSemester} Semester`}
               </motion.p>
             </div>
 

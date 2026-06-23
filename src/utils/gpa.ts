@@ -1,6 +1,7 @@
+import { CgpaScale, DEFAULT_CGPA_SCALE } from '../types';
+
 // ─────────────────────────────────────────────────────────────────────────────
-// GRADE SCALE  (score-first system)
-// Score → Grade → Grade Point
+// SCORE → GRADE  (unchanged from score-first refactor)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface GradeResult {
@@ -10,7 +11,8 @@ export interface GradeResult {
 
 /**
  * Derive grade and grade point from a 0–100 score.
- * Returns { grade: 'F', gradePoint: 0 } for any out-of-range input.
+ * Grade points are on the 5.0 scale — they are normalised to other
+ * scales only at display / GPA-class time, never at storage time.
  */
 export function scoreToGrade(score: number): GradeResult {
   if (score >= 70) return { grade: 'A', gradePoint: 5.0 };
@@ -21,39 +23,74 @@ export function scoreToGrade(score: number): GradeResult {
   return            { grade: 'F', gradePoint: 0.0 };
 }
 
-/**
- * Backward-compat lookup for old records that were saved with a letter grade
- * but no score. Returns the grade point so the GPA calculation still works.
- */
+/** Backward-compat lookup for old records saved with a letter grade but no score. */
 export const LEGACY_GRADE_POINTS: Record<string, number> = {
   'A': 5.0, 'AB': 4.5, 'B': 4.0, 'BC': 3.5,
   'C': 3.0, 'CD': 2.5, 'D': 2.0, 'E': 1.0, 'F': 0.0,
 };
 
-/**
- * Resolve a grade point from either a numeric score (new) or a legacy grade
- * string (old records). Used by the store / display layer.
- */
+/** Resolve a grade point from score (new) or legacy grade string (old). */
 export function resolveGradePoint(score: number | undefined, grade: string): number {
   if (score !== undefined) return scoreToGrade(score).gradePoint;
   return LEGACY_GRADE_POINTS[grade] ?? 0;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GPA calculation — unchanged, score-agnostic
+// GPA CALCULATION
+// Grade points are always stored on the 5.0 scale internally.
+// Normalisation to the student's school scale happens here.
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Calculate raw GPA on the 5.0 internal scale.
+ * Pass the result through `normaliseGPA` before displaying.
+ */
 export function calculateGPA(courses: { creditUnits: number; gradePoint: number }[]): number {
   const totalUnits  = courses.reduce((s, c) => s + c.creditUnits, 0);
   const totalPoints = courses.reduce((s, c) => s + c.creditUnits * c.gradePoint, 0);
   return totalUnits > 0 ? Math.round((totalPoints / totalUnits) * 100) / 100 : 0;
 }
 
-export function getGPAClass(gpa: number): { label: string; color: string } {
-  if (gpa >= 4.5) return { label: 'First Class',         color: '#22c55e' };
-  if (gpa >= 3.5) return { label: 'Second Class Upper',  color: '#3b82f6' };
-  if (gpa >= 2.5) return { label: 'Second Class Lower',  color: '#f97316' };
-  if (gpa >= 1.5) return { label: 'Third Class',         color: '#eab308' };
-  if (gpa >= 1.0) return { label: 'Pass',                color: '#f87171' };
-  return                 { label: 'Fail',                color: '#ef4444' };
+/**
+ * Normalise a raw GPA (5.0 internal scale) to the student's school scale.
+ *
+ * Example:
+ *   raw = 4.0 (on 5.0 scale)
+ *   school scale = 4.0  →  normalised = 3.2
+ *   school scale = 3.0  →  normalised = 2.4
+ *   school scale = 5.0  →  normalised = 4.0  (no change)
+ */
+export function normaliseGPA(rawGpa: number, scale: CgpaScale = DEFAULT_CGPA_SCALE): number {
+  if (scale === 5.0) return rawGpa; // already on this scale
+  return Math.round((rawGpa / 5.0) * scale * 100) / 100;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GPA CLASS  — thresholds scale with the student's school scale
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Return the academic standing label and colour for a given GPA.
+ * Always pass a normalised GPA (already on `scale`) and the scale itself.
+ *
+ * Thresholds are expressed as a fraction of the scale max so they work
+ * identically regardless of which scale the student's school uses:
+ *   First Class   ≥ 90% of max  (4.5/5.0, 3.6/4.0, 2.7/3.0)
+ *   Second Upper  ≥ 70%         (3.5/5.0, 2.8/4.0, 2.1/3.0)
+ *   Second Lower  ≥ 50%         (2.5/5.0, 2.0/4.0, 1.5/3.0)
+ *   Third Class   ≥ 30%         (1.5/5.0, 1.2/4.0, 0.9/3.0)
+ *   Pass          ≥ 20%         (1.0/5.0, 0.8/4.0, 0.6/3.0)
+ *   Fail          < 20%
+ */
+export function getGPAClass(
+  normalisedGpa: number,
+  scale: CgpaScale = DEFAULT_CGPA_SCALE,
+): { label: string; color: string } {
+  const pct = normalisedGpa / scale; // fraction of max (0–1)
+  if (pct >= 0.90) return { label: 'First Class',        color: '#22c55e' };
+  if (pct >= 0.70) return { label: 'Second Class Upper', color: '#3b82f6' };
+  if (pct >= 0.50) return { label: 'Second Class Lower', color: '#f97316' };
+  if (pct >= 0.30) return { label: 'Third Class',        color: '#eab308' };
+  if (pct >= 0.20) return { label: 'Pass',               color: '#f87171' };
+  return                  { label: 'Fail',               color: '#ef4444' };
 }

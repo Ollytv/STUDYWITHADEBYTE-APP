@@ -13,7 +13,7 @@ import { Input, Select } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { requestNotificationPermission } from '../services/notifications';
 import { exportAllData, clearAllData } from '../services/db';
-import { StudentProfile, ProgramLevel, Semester, PROGRAM_LEVEL_META, DEFAULT_PROGRAM_LEVEL } from '../types';
+import { StudentProfile, ProgramLevel, Semester, PROGRAM_LEVEL_META, DEFAULT_PROGRAM_LEVEL, CGPA_SCALE_OPTIONS, DEFAULT_CGPA_SCALE, CgpaScale } from '../types';
 
 const DEPARTMENTS = [
   'Computer Science','Business Administration','Accountancy',
@@ -310,7 +310,8 @@ export default function Settings() {
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
   const [profileForm, setProfileForm] = useState<Partial<StudentProfile>>(profile || {
-    fullName:'', department:'', programLevel: DEFAULT_PROGRAM_LEVEL, matricNumber:'',
+    fullName:'', department:'', programLevel: DEFAULT_PROGRAM_LEVEL,
+    cgpaScale: DEFAULT_CGPA_SCALE, matricNumber:'',
     semesterStartDate:'', semesterEndDate:'', targetAttendance:75,
     currentSemester:'First',
     currentAcademicYear:`${new Date().getFullYear()}/${new Date().getFullYear()+1}`,
@@ -325,7 +326,8 @@ export default function Settings() {
 
   const openProfile = () => {
     setProfileForm(profile ? { ...profile } : {
-      fullName:'', department:'', programLevel: DEFAULT_PROGRAM_LEVEL, matricNumber:'',
+      fullName:'', department:'', programLevel: DEFAULT_PROGRAM_LEVEL,
+      cgpaScale: DEFAULT_CGPA_SCALE, matricNumber:'',
       semesterStartDate:'', semesterEndDate:'', targetAttendance:75,
       currentSemester:'First',
       currentAcademicYear:`${new Date().getFullYear()}/${new Date().getFullYear()+1}`,
@@ -908,6 +910,12 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
             options={[{ value: '', label: 'Select department...' }, ...DEPARTMENTS.map(d => ({ value: d, label: d }))]} />
           <Select label="Academic Level" value={profileForm.programLevel || DEFAULT_PROGRAM_LEVEL} onChange={v => setP('programLevel', v as ProgramLevel)}
             options={[{ value: '', label: 'Select level...' }, ...LEVEL_OPTIONS]} />
+          <Select
+            label="School CGPA Scale"
+            value={String(profileForm.cgpaScale ?? DEFAULT_CGPA_SCALE)}
+            onChange={v => setP('cgpaScale', parseFloat(v) as CgpaScale)}
+            options={CGPA_SCALE_OPTIONS.map(o => ({ value: String(o.value), label: o.label }))}
+          />
           <Select label="Current Semester" value={profileForm.currentSemester || 'First'} onChange={v => setP('currentSemester', v)}
             options={[{ value: 'First', label: 'First Semester' }, { value: 'Second', label: 'Second Semester' }]} />
           <div className="grid grid-cols-2 gap-3">
