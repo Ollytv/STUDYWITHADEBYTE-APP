@@ -33,14 +33,45 @@ export function Modal({ isOpen, onClose, title, children, fullHeight = false }: 
             onClick={onClose}
           />
 
-          {/* Sheet */}
+          {/* Sheet
+            ─ WHY inline style instead of Tailwind classes for left/right/width:
+              Framer Motion applies a CSS transform (translateY) to animate the
+              sheet in/out. On some Android WebViews and older iOS Safari,
+              combining CSS transforms with Tailwind's `left-0 right-0` shorthand
+              causes the browser to recalculate the containing block mid-animation,
+              producing 1–3px lateral drift. Explicit inline left/right/width
+              bypasses that recalculation path entirely.
+          */}
           <motion.div
             className={`
-              fixed left-0 right-0 bottom-0 z-[60]
+              fixed bottom-0 z-[60]
               bg-dark-900 rounded-t-3xl border-t border-white/10
+              flex flex-col
               ${fullHeight ? 'h-[92vh]' : 'max-h-[92vh]'}
-              overflow-hidden flex flex-col
             `}
+            style={{
+              // Pin to full viewport width — explicit values prevent
+              // fractional-pixel rounding that Tailwind classes can produce
+              // on high-DPI screens with odd viewport widths
+              left: 0,
+              right: 0,
+              width: '100%',
+              maxWidth: '100%',
+              // Clip any child that overflows horizontally — if an input,
+              // grid, or absolute-positioned element is wider than the modal,
+              // this stops it creating a horizontal scrollbar on the whole sheet
+              overflowX: 'hidden',
+              // Respect device safe-area insets (notch phones, rounded corners).
+              // Left/right insets matter on landscape orientation — without these
+              // content can sit behind the rounded screen corners
+              paddingLeft: 'env(safe-area-inset-left, 0px)',
+              paddingRight: 'env(safe-area-inset-right, 0px)',
+              // Create an isolated stacking context so Framer Motion's
+              // transform doesn't affect sibling elements' layout
+              isolation: 'isolate',
+              // Guarantee padding never adds to declared width
+              boxSizing: 'border-box',
+            }}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -64,9 +95,14 @@ export function Modal({ isOpen, onClose, title, children, fullHeight = false }: 
               </div>
             )}
 
-            {/* Content — pb accounts for home-bar safe area on notched devices */}
+            {/* Content
+              ─ overscroll-contain stops scroll events bubbling to the page
+                behind the modal (prevents background scrolling on iOS)
+              ─ min-w-0 is critical: without it, a flex child can expand past
+                its parent when it contains wide content like inputs or grids
+            */}
             <div
-              className="flex-1 overflow-y-auto overscroll-contain"
+              className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain min-w-0 w-full"
               style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
             >
               {children}
