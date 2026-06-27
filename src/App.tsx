@@ -14,14 +14,19 @@ import More from './pages/More';
 import Onboarding from './pages/Onboarding';
 import AuthScreen from './pages/AuthScreen';
 import SplashScreen from './pages/SplashScreen';
+import Landing from './pages/Landing';
 import Materials from './pages/Materials';
 import Assignments from './pages/Assignments';
 import Timer from './pages/Timer';
 import GPA from './pages/GPA';
+import AIAssistant from './pages/AIAssistant';
 
 export default function App() {
   const { activeTab, authLoading, currentUser, hasProfile, initAuth, settings } = useStore();
-  const [splashDone, setSplashDone] = useState(false);
+  const [splashDone, setSplashDone]   = useState(false);
+  // showAuth: false = show Landing, true = show AuthScreen
+  // Persisted in sessionStorage so Back from auth doesn't reset to landing
+  const [showAuth, setShowAuth]       = useState(false);
 
   useEffect(() => {
     const unsubscribe = initAuth();
@@ -47,13 +52,14 @@ export default function App() {
     return <SplashScreen />;
   }
 
-  // ── Gate 2: No Firebase user → Login/Signup ───────────────────────────────
+  // ── Gate 2: No Firebase user → Landing or AuthScreen ─────────────────────
   if (!currentUser) {
     return (
       <div className="dark bg-dark-950 min-h-screen">
-        <AuthScreen />
-        {/* Mounted on every post-splash screen so it can appear on first
-            visit regardless of whether the visitor has signed in yet. */}
+        {showAuth
+          ? <AuthScreen />
+          : <Landing onGetStarted={() => setShowAuth(true)} />
+        }
         <InstallPrompt />
       </div>
     );
@@ -74,24 +80,19 @@ export default function App() {
 }
 
 // Separated so useNotifications only runs when fully authenticated
-// (it reads classes + settings from the store which aren't loaded until then)
 function MainApp() {
   const { activeTab, settings } = useStore();
   const { alert, dismissAlert } = useNotifications();
 
-  const isInnerPage = ['gpa', 'timer', 'assignments', 'materials'].includes(activeTab);
+  const isInnerPage = ['gpa', 'timer', 'assignments', 'materials', 'ai'].includes(activeTab);
 
   return (
     <div className={settings?.theme === 'dark' ? 'dark' : ''}>
-      {/* Global in-app notification popup — always mounted, z-[70] */}
       <NotificationAlert
         visible={alert.visible}
         payload={alert.payload}
         onDismiss={dismissAlert}
       />
-
-      {/* First-visit "Install StudiByte" popup — z-[100], self-gating via
-          localStorage + install detection, so it's safe to always mount. */}
       <InstallPrompt />
 
       <div className="bg-dark-950 min-h-screen pb-20">
@@ -105,6 +106,7 @@ function MainApp() {
         {activeTab === 'timer'       && <Timer />}
         {activeTab === 'assignments' && <Assignments />}
         {activeTab === 'materials'   && <Materials />}
+        {activeTab === 'ai'          && <AIAssistant />}
         {!isInnerPage && <BottomNav />}
       </div>
     </div>

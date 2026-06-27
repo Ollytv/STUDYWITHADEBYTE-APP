@@ -11,17 +11,35 @@ const tabs: { id: TabRoute; icon: React.ComponentType<any>; label: string }[] = 
   { id: 'settings',   icon: Settings,        label: 'Profile' },
 ];
 
+// ── Nav sizing — single source of truth ─────────────────────────────────────
+// These are the exact same numbers already used below (content row height +
+// top/bottom padding). Keeping them as constants lets us publish an accurate
+// `--bottom-nav-height` CSS variable that other fixed elements (e.g. the AI
+// chat input) can read, instead of guessing the nav's height with a magic
+// pixel value elsewhere in the app.
+const NAV_CONTENT_HEIGHT = 52; // matches each tab button's minHeight
+const NAV_PADDING_Y      = 8;  // top/bottom padding inside the nav (excl. safe-area)
+
 export default function BottomNav() {
   const { activeTab, setActiveTab } = useStore();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-[55]">
+      {/* Publish the nav's true rendered height (including the safe-area
+          inset) as a global CSS variable. Purely informational — changes
+          nothing visually — so fixed siblings elsewhere in the app can sit
+          flush above the nav instead of underneath it. */}
+      <style>{`
+        :root {
+          --bottom-nav-height: calc(${NAV_CONTENT_HEIGHT + NAV_PADDING_Y * 2}px + env(safe-area-inset-bottom, 0px));
+        }
+      `}</style>
       {/* Frosted glass blur layer */}
       <div className="absolute inset-0 backdrop-blur-2xl"
         style={{ background: 'rgba(10,10,15,0.85)', borderTop: '1px solid rgba(255,255,255,0.06)' }}
       />
       <div className="relative flex items-end justify-around max-w-lg mx-auto px-3"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)', paddingTop: 8 }}
+        style={{ paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_PADDING_Y}px)`, paddingTop: NAV_PADDING_Y }}
       >
         {tabs.map((tab, idx) => {
           const Icon = tab.icon;
@@ -32,7 +50,7 @@ export default function BottomNav() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className="relative flex flex-col items-center gap-1 flex-1 touch-manipulation"
-              style={{ minHeight: 52, WebkitTapHighlightColor: 'transparent' }}
+              style={{ minHeight: NAV_CONTENT_HEIGHT, WebkitTapHighlightColor: 'transparent' }}
               whileTap={{ scale: 0.82 }}
               transition={{ type: 'spring', stiffness: 500, damping: 25 }}
             >

@@ -6,7 +6,7 @@ import {
   DEFAULT_PROGRAM_LEVEL, DEFAULT_CGPA_SCALE,
 } from '../types';
 import * as db from '../services/db';
-import { signUp as fbSignUp, signIn as fbSignIn, signOut as fbSignOut, onAuthChange, AuthUser } from '../services/auth';
+import { signUp as fbSignUp, signIn as fbSignIn, signOut as fbSignOut, resetPassword as fbResetPassword, onAuthChange, AuthUser } from '../services/auth';
 import { generateId } from '../utils/id';
 
 type AppSettingsExtended = AppSettings & { pin?: string };
@@ -79,6 +79,7 @@ interface AppState {
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   clearAuthError: () => void;
 
   // ── Data actions ───────────────────────────────────────────────────────────
@@ -223,6 +224,19 @@ export const useStore = create<AppState>()(
         // Call Firebase signOut — onAuthChange fires → sets currentUser: null → App.tsx shows Login
         await fbSignOut();
         // onAuthChange handles all the state clearing above
+      },
+
+      // ── resetPassword ─────────────────────────────────────────────────────
+      resetPassword: async (email) => {
+        set({ authError: '' });
+        try {
+          await fbResetPassword(email);
+          // No currentUser change — this just triggers Firebase to email a reset link.
+        } catch (e: any) {
+          const msg = friendlyAuthError(e.code || e.message);
+          set({ authError: msg });
+          throw new Error(msg);
+        }
       },
 
       clearAuthError: () => set({ authError: '' }),

@@ -95,7 +95,7 @@ export function getProgramLevelMeta(value: ProgramLevel): ProgramLevelMeta {
 
 export type ColorLabel = 'green' | 'blue' | 'purple' | 'orange' | 'red' | 'yellow' | 'pink' | 'cyan' | 'teal' | 'indigo';
 export type Semester = 'First' | 'Second';
-export type TabRoute = 'dashboard' | 'timetable' | 'attendance' | 'more' | 'settings' | 'gpa' | 'timer' | 'assignments' | 'materials' | 'import';
+export type TabRoute = 'dashboard' | 'timetable' | 'attendance' | 'more' | 'settings' | 'gpa' | 'timer' | 'assignments' | 'materials' | 'import' | 'ai';
 
 export interface CourseClass {
   id: string;
@@ -204,6 +204,27 @@ export interface AppSettings {
   firstLaunch: boolean;
   onboardingComplete: boolean;
   dataVersion: number;
+}
+
+export type ChatRole = 'user' | 'assistant';
+
+export interface ChatMessage {
+  id: string;
+  role: ChatRole;
+  content: string;
+  createdAt: string;
+  /** true while the assistant is still streaming the response */
+  streaming?: boolean;
+  /** set if this message failed to send */
+  error?: boolean;
+}
+
+export interface ChatConversation {
+  id: string;
+  title: string;       // first user message truncated to 60 chars
+  messages: ChatMessage[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ImportResult {

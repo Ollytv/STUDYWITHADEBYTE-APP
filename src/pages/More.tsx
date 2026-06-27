@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { TrendingUp, Timer, ClipboardList, BookOpen, ChevronRight, Sparkles, Star } from 'lucide-react';
+import { TrendingUp, Timer, ClipboardList, BookOpen, ChevronRight, Sparkles, Star, Brain } from 'lucide-react';
 import { useStore } from '../hooks/useStore';
 import { calculateGPA, getGPAClass } from '../utils/gpa';
 import { useMemo } from 'react';
@@ -49,6 +49,17 @@ const features = [
     tab: 'materials' as const,
     emoji: '📚',
   },
+  {
+    id: 'ai',
+    icon: Brain,
+    label: 'AI Study Assistant',
+    desc: 'Ask questions, get explanations, study smarter',
+    color: '#a855f7',
+    bg: 'rgba(168,85,247,0.1)',
+    border: 'rgba(168,85,247,0.2)',
+    tab: 'ai' as const,
+    emoji: '🤖',
+  },
 ];
 
 export default function More() {
@@ -73,6 +84,7 @@ export default function More() {
     assignments: pendingAssign > 0    ? `${pendingAssign}`  : null,
     materials:   semMaterials > 0     ? `${semMaterials}`   : null,
     timer:       null,
+    ai:          null,
   };
 
   const initials = profile?.fullName?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'S';
