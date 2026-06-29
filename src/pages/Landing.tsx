@@ -186,8 +186,14 @@ export default function Landing({ onGetStarted }: { onGetStarted: () => void }) 
     <div className="min-h-screen bg-dark-950 overflow-x-hidden">
 
       {/* ── NAV ─────────────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5 py-3"
-        style={{ background: 'rgba(5,8,10,0.85)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5"
+        style={{
+          background: 'rgba(5,8,10,0.85)',
+          backdropFilter: 'blur(16px)',
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+          paddingBottom: '12px',
+        }}>
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-green-500 flex items-center justify-center">
             <Sparkles size={13} className="text-dark-950" />
@@ -203,7 +209,8 @@ export default function Landing({ onGetStarted }: { onGetStarted: () => void }) 
       </nav>
 
       {/* ── HERO ────────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col justify-center px-5 pt-24 pb-16 max-w-2xl mx-auto overflow-hidden">
+      <section className="relative min-h-screen flex flex-col justify-center px-5 pb-16 max-w-2xl mx-auto overflow-hidden"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 96px)' }}>
         {/* Background glow */}
         <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full opacity-10 pointer-events-none"
           style={{ background: 'radial-gradient(circle, #22c55e, transparent 70%)' }} />

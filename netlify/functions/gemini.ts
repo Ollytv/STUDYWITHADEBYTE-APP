@@ -11,10 +11,17 @@
 import type { Handler, HandlerEvent } from '@netlify/functions';
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 
-// Recommended general-purpose text/multimodal model per the @google/genai SDK guidance.
-const GEMINI_MODEL = 'gemini-3-flash-preview';
+// gemini-2.0-flash is GA, fast, and stable. Do NOT use preview/experimental
+// model strings in production — they are the primary cause of 503 errors.
+const GEMINI_MODEL = 'gemini-2.0-flash';
 
-// System prompt — scopes the AI to academic assistance
+/**
+ * Hard timeout (ms) for the Gemini SDK call.
+ * Netlify's default function timeout is 10 s. We abort at 8 s so the function
+ * can return a clean error response before Netlify kills it with a 502.
+ */
+const SDK_TIMEOUT_MS = 8_000;
+
 const SYSTEM_INSTRUCTION = `You are StudiByte AI, an intelligent academic assistant built into the StudiByte student productivity app.
 
 Your role:
@@ -36,7 +43,6 @@ You are NOT a general-purpose chatbot. Politely redirect off-topic requests back
 interface GeminiPart    { text: string }
 interface GeminiMessage { role: 'user' | 'model'; parts: GeminiPart[] }
 
-// ── Shared response helpers (keep CORS headers consistent on every reply) ──
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin':  '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -49,6 +55,23 @@ function jsonResponse(statusCode: number, body: Record<string, unknown>) {
     headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
     body: JSON.stringify(body),
   };
+}
+
+/**
+ * Wrap a promise with a hard timeout.
+ * Rejects with a structured error that the catch block can inspect.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(Object.assign(new Error('Gemini SDK call timed out'), { timedOut: true }));
+    }, ms);
+
+    promise.then(
+      val  => { clearTimeout(timer); resolve(val); },
+      err  => { clearTimeout(timer); reject(err);  },
+    );
+  });
 }
 
 export const handler: Handler = async (event: HandlerEvent) => {
@@ -68,13 +91,24 @@ export const handler: Handler = async (event: HandlerEvent) => {
     return jsonResponse(500, { error: 'AI service is not configured. Please contact support.' });
   }
 
-  // ── Parse body ──────────────────────────────────────────────────────────
+  // ── Parse + validate body ───────────────────────────────────────────────
   let messages: GeminiMessage[];
   try {
     const body = JSON.parse(event.body || '{}');
     messages   = body.messages;
+
     if (!Array.isArray(messages) || messages.length === 0) {
       throw new Error('messages must be a non-empty array');
+    }
+
+    // Basic structural validation — reject malformed payloads early
+    for (const msg of messages) {
+      if (msg.role !== 'user' && msg.role !== 'model') {
+        throw new Error(`Invalid role: ${msg.role}`);
+      }
+      if (!Array.isArray(msg.parts) || !msg.parts[0]?.text) {
+        throw new Error('Each message must have a parts array with at least one text part');
+      }
     }
   } catch (err) {
     return jsonResponse(400, { error: 'Invalid request body.' });
@@ -84,15 +118,15 @@ export const handler: Handler = async (event: HandlerEvent) => {
   try {
     const ai = new GoogleGenAI({ apiKey });
 
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
+    const sdkCall = ai.models.generateContent({
+      model:    GEMINI_MODEL,
       contents: messages,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
-        temperature:     0.7,
-        topK:            40,
-        topP:            0.95,
-        maxOutputTokens: 2048,
+        temperature:       0.7,
+        topK:              40,
+        topP:              0.95,
+        maxOutputTokens:   2048,
         safetySettings: [
           { category: HarmCategory.HARM_CATEGORY_HARASSMENT,        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
           { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,       threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
@@ -102,29 +136,59 @@ export const handler: Handler = async (event: HandlerEvent) => {
       },
     });
 
-    const text = response.text;
+    // Apply hard timeout so we return a clean 504 instead of being killed
+    // mid-execution by Netlify, which produces an opaque 502.
+    const response = await withTimeout(sdkCall, SDK_TIMEOUT_MS);
+    const text     = response.text;
 
-    if (!text) {
-      console.error('[gemini] Unexpected response shape:', JSON.stringify(response));
+    if (!text || typeof text !== 'string' || text.trim() === '') {
+      console.error('[gemini] Empty response from SDK:', JSON.stringify(response));
       return jsonResponse(500, { error: 'AI returned an empty response. Please try again.' });
     }
 
     return jsonResponse(200, { text });
 
   } catch (err: any) {
-    // ApiError from @google/genai exposes a `status` (HTTP code) plus `message`.
-    const status = err?.status;
-
-    if (status) {
-      console.error(`[gemini] API error ${status}:`, err.message);
-      return jsonResponse(status, {
-        error: status === 429
-          ? 'Too many requests. Please wait a moment and try again.'
-          : `AI service error (${status}). Please try again.`,
+    // ── Timeout ───────────────────────────────────────────────────────────
+    if (err?.timedOut) {
+      console.error('[gemini] SDK call timed out after', SDK_TIMEOUT_MS, 'ms');
+      return jsonResponse(504, {
+        error: "We're having trouble reaching the AI service. Please try again in a moment.",
       });
     }
 
+    // ── Gemini API errors — ApiError exposes .status ──────────────────────
+    const status = err?.status as number | undefined;
+
+    if (status) {
+      console.error(`[gemini] API error ${status}:`, err.message);
+
+      if (status === 429) {
+        return jsonResponse(429, {
+          error: 'The AI service is temporarily busy. Please wait a moment and try again.',
+        });
+      }
+      if (status === 400) {
+        return jsonResponse(400, {
+          error: 'Your message could not be processed. Please try rephrasing it.',
+        });
+      }
+      if (status === 401 || status === 403) {
+        return jsonResponse(status, {
+          error: 'Authentication error with the AI service. Please contact support.',
+        });
+      }
+      // 500, 502, 503, 504 from Gemini — propagate the same code so the
+      // client retry logic can identify it as retryable
+      return jsonResponse(status, {
+        error: "We're having trouble reaching the AI service. Please try again in a moment.",
+      });
+    }
+
+    // ── Unknown / network error ───────────────────────────────────────────
     console.error('[gemini] Unexpected error:', err);
-    return jsonResponse(502, { error: 'Could not reach the AI service. Check your connection.' });
+    return jsonResponse(502, {
+      error: "We're having trouble reaching the AI service. Please try again in a moment.",
+    });
   }
 };

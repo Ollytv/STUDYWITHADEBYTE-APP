@@ -17,20 +17,14 @@ import {
 import { generateId } from '../utils/id';
 
 // ── Markdown renderer ─────────────────────────────────────────────────────────
-// Lightweight inline renderer — no external dependency needed.
 function renderMarkdown(text: string): string {
   return text
-    // Code blocks (```lang\n...\n```)
     .replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) =>
       `<pre class="ai-code-block"><code class="language-${lang || 'text'}">${escHtml(code.trim())}</code></pre>`
     )
-    // Inline code
     .replace(/`([^`]+)`/g, '<code class="ai-inline-code">$1</code>')
-    // Bold
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    // Italic
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    // Tables  (| col | col |)
     .replace(/(\|.+\|\n?)+/g, (table) => {
       const rows = table.trim().split('\n').filter(r => r.trim());
       const isHeader = (r: string) => /^\|[-| :]+\|$/.test(r.trim());
@@ -46,20 +40,14 @@ function renderMarkdown(text: string): string {
       html += '</table></div>';
       return html;
     })
-    // Unordered lists
     .replace(/^[ \t]*[-*] (.+)$/gm, '<li>$1</li>')
     .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-    // Ordered lists
     .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
-    // Headings
     .replace(/^### (.+)$/gm, '<h3 class="ai-h3">$1</h3>')
     .replace(/^## (.+)$/gm,  '<h2 class="ai-h2">$1</h2>')
     .replace(/^# (.+)$/gm,   '<h1 class="ai-h1">$1</h1>')
-    // Horizontal rule
     .replace(/^---$/gm, '<hr class="ai-hr"/>')
-    // Paragraphs (double newline)
     .replace(/\n{2,}/g, '</p><p class="ai-p">')
-    // Single newlines
     .replace(/\n/g, '<br/>');
 }
 
@@ -84,7 +72,6 @@ function TypingDots() {
 // ── Message bubble ────────────────────────────────────────────────────────────
 function MessageBubble({ msg }: { msg: ChatMessage }) {
   const isUser = msg.role === 'user';
-
   return (
     <motion.div
       className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
@@ -92,7 +79,6 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 28 }}
     >
-      {/* Avatar */}
       <div className={`w-8 h-8 rounded-2xl flex items-center justify-center flex-shrink-0 mt-0.5
         ${isUser
           ? 'bg-green-500/20 border border-green-500/30'
@@ -102,8 +88,6 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
           ? <User size={14} className="text-green-400" />
           : <Bot  size={14} className="text-purple-400" />}
       </div>
-
-      {/* Bubble */}
       <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm font-body leading-relaxed
         ${isUser
           ? 'bg-green-500/15 border border-green-500/20 text-white rounded-tr-sm'
@@ -115,14 +99,13 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
           ? <TypingDots />
           : isUser
           ? <p className="whitespace-pre-wrap">{msg.content}</p>
+          : msg.error
+          ? <p className="text-xs text-red-300">{msg.content}</p>
           : <div
               className="ai-content"
               dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
             />
         }
-        {msg.error && (
-          <p className="text-xs text-red-400 mt-1 opacity-80">{msg.content}</p>
-        )}
       </div>
     </motion.div>
   );
@@ -185,13 +168,31 @@ export default function AIAssistant() {
   const inputRef   = useRef<HTMLTextAreaElement>(null);
   const scrollRef  = useRef<HTMLDivElement>(null);
 
+  /**
+   * Tracks the AbortController for the in-flight request.
+   * Used to cancel if the component unmounts or a new request supersedes it.
+   */
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  /**
+   * Tracks the conversation ID that owns the current in-flight request.
+   * Guards against a slow response landing in the wrong conversation.
+   */
+  const inflightConvIdRef = useRef<string | null>(null);
+
+  /**
+   * Prevents duplicate submissions: true while a fetch is in-flight.
+   * Separate from `loading` state to avoid React batching races.
+   */
+  const isSendingRef = useRef(false);
+
   // ── Active conversation ──────────────────────────────────────────────────
   const activeConv = useMemo(
     () => conversations.find(c => c.id === activeConvId) ?? null,
     [conversations, activeConvId]
   );
 
-  // ── Load conversations from Firestore on mount ───────────────────────────
+  // ── Load conversations on mount ──────────────────────────────────────────
   useEffect(() => {
     setConvLoading(true);
     loadConversations()
@@ -200,6 +201,13 @@ export default function AIAssistant() {
         if (convs.length > 0) setActiveConvId(convs[0].id);
       })
       .finally(() => setConvLoading(false));
+  }, []);
+
+  // ── Cancel in-flight request on unmount ──────────────────────────────────
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
   }, []);
 
   // ── Auto-scroll to bottom on new messages ────────────────────────────────
@@ -227,7 +235,7 @@ export default function AIAssistant() {
         ? prev.map(c => c.id === conv.id ? conv : c)
         : [conv, ...prev];
     });
-    saveConversation(conv); // fire and forget
+    saveConversation(conv); // fire and forget — non-fatal if it fails
   }, []);
 
   // ── New conversation ─────────────────────────────────────────────────────
@@ -251,15 +259,23 @@ export default function AIAssistant() {
   };
 
   // ── Send message ─────────────────────────────────────────────────────────
-  const handleSend = async (overrideText?: string) => {
+  const handleSend = useCallback(async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
-    if (!text || loading) return;
 
+    // ── Duplicate / empty guard ──────────────────────────────────────────
+    if (!text || isSendingRef.current) return;
+
+    // Abort any still-running request before starting a new one
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    isSendingRef.current = true;
     setInput('');
     setLoading(true);
     setRetryMsg(null);
 
-    // Ensure we have an active conversation
+    // ── Resolve / create conversation ────────────────────────────────────
     let conv = activeConv;
     if (!conv) {
       conv = createConversation();
@@ -267,41 +283,61 @@ export default function AIAssistant() {
       setActiveConvId(conv.id);
     }
 
-    // Add user message
+    // Lock the conversation ID for this request to detect stale responses
+    const thisConvId = conv.id;
+    inflightConvIdRef.current = thisConvId;
+
+    // ── Optimistic UI: add user message ──────────────────────────────────
     const userMsg = makeUserMessage(text);
     const withUser: ChatConversation = {
       ...conv,
-      title:    conv.messages.length === 0 ? (text.slice(0, 60) + (text.length > 60 ? '…' : '')) : conv.title,
-      messages: [...conv.messages, userMsg],
+      title:     conv.messages.length === 0
+        ? (text.slice(0, 60) + (text.length > 60 ? '…' : ''))
+        : conv.title,
+      messages:  [...conv.messages, userMsg],
       updatedAt: new Date().toISOString(),
     };
     upsertConv(withUser);
 
-    // Add streaming placeholder
+    // ── Show streaming placeholder ────────────────────────────────────────
     const streamingMsg = makeAssistantMessage('', { streaming: true });
-    const withStreaming: ChatConversation = {
-      ...withUser,
-      messages: [...withUser.messages, streamingMsg],
-    };
-    setConversations(prev => prev.map(c => c.id === withUser.id ? withStreaming : c));
+    setConversations(prev =>
+      prev.map(c =>
+        c.id === thisConvId
+          ? { ...withUser, messages: [...withUser.messages, streamingMsg] }
+          : c
+      )
+    );
 
     try {
-      const replyText = await callGemini(withUser.messages);
+      // callGemini handles retries + timeout internally; pass abort signal
+      const replyText = await callGemini(withUser.messages, controller.signal);
+
+      // Race-condition guard: discard if the user switched conversations
+      if (inflightConvIdRef.current !== thisConvId) return;
+
       const assistantMsg = makeAssistantMessage(replyText);
-      const updated = buildUpdatedConversation(withUser, userMsg, assistantMsg);
-      // Replace streaming placeholder with real reply
-      const final: ChatConversation = {
-        ...updated,
-        messages: updated.messages.filter(m => m.id !== streamingMsg.id),
-      };
-      // Ensure the real assistant message is included
-      const finalWithReply: ChatConversation = {
-        ...final,
+
+      // Replace streaming placeholder with the real reply
+      const finalConv: ChatConversation = {
+        ...withUser,
         messages: [...withUser.messages, assistantMsg],
       };
-      upsertConv(finalWithReply);
+      upsertConv(finalConv);
+
     } catch (err: any) {
-      console.error('[AIAssistant] callGemini error:', err);
+      // Ignore cancellation from unmount or superseded requests
+      if (err?.message === 'Request was cancelled.' || controller.signal.aborted) {
+        return;
+      }
+
+      if (import.meta.env.DEV) {
+        console.error('[AIAssistant] callGemini failed after all retries:', err);
+      }
+
+      // Race-condition guard
+      if (inflightConvIdRef.current !== thisConvId) return;
+
       const errMsg = makeAssistantMessage(
         err?.message || 'Something went wrong. Please try again.',
         { error: true }
@@ -312,23 +348,30 @@ export default function AIAssistant() {
         messages: [...withUser.messages, errMsg],
       };
       upsertConv(withError);
-      setRetryMsg(userMsg); // allow retry
+      setRetryMsg(userMsg);
+
     } finally {
+      // Always reset loading — even if an exception was swallowed above
+      isSendingRef.current = false;
       setLoading(false);
+
+      if (inflightConvIdRef.current === thisConvId) {
+        inflightConvIdRef.current = null;
+      }
     }
-  };
+  }, [activeConv, input, upsertConv]);
 
   // ── Retry last failed message ────────────────────────────────────────────
-  const handleRetry = () => {
+  const handleRetry = useCallback(() => {
     if (!retryMsg || !activeConv) return;
-    // Remove the error message and retry
+    // Strip the error message from the conversation before re-sending
     const withoutError: ChatConversation = {
       ...activeConv,
       messages: activeConv.messages.filter(m => !m.error),
     };
     upsertConv(withoutError);
     handleSend(retryMsg.content);
-  };
+  }, [retryMsg, activeConv, upsertConv, handleSend]);
 
   // ── Input auto-resize ────────────────────────────────────────────────────
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
