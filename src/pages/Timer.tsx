@@ -3,6 +3,8 @@ import { Play, Pause, RotateCcw, Coffee, Brain, BarChart2, ChevronLeft } from 'l
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useStore } from '../hooks/useStore';
 import { ProgressRing } from '../components/ui/ProgressRing';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../routes';
 
 type TimerMode = 'study' | 'break';
 
@@ -13,7 +15,8 @@ const PRESETS = [
 ];
 
 export default function Timer() {
-  const { studySessions, addStudySession, setActiveTab } = useStore();
+ const { studySessions, addStudySession } = useStore();
+  const navigate = useNavigate();
 
   const [preset, setPreset]   = useState(0);
   const [mode, setMode]       = useState<TimerMode>('study');
@@ -93,7 +96,7 @@ export default function Timer() {
       <div className="px-4 pt-14 pb-6">
         <div className="flex items-center gap-3 mb-1">
           <button
-            onClick={() => setActiveTab('more')}
+            onClick={() => navigate(ROUTES.app.more)}
             className="w-9 h-9 rounded-xl bg-dark-800 border border-white/8 flex items-center justify-center text-dark-400 hover:text-white transition-colors"
           >
             <ChevronLeft size={18} />

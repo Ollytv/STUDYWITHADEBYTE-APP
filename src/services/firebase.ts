@@ -5,6 +5,7 @@ import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getAnalytics } from 'firebase/analytics';
 import { getMessaging, isSupported } from 'firebase/messaging';
+import { getFunctions } from 'firebase/functions';
 
 // ── Environment variable validation ──────────────────────────────────────────
 // Fail loudly at startup if any required variable is missing.
@@ -41,9 +42,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-export const auth    = getAuth(app);
-export const db      = getFirestore(app);
-export const storage = getStorage(app);
+export const auth      = getAuth(app);
+export const db        = getFirestore(app);
+export const storage   = getStorage(app);
+export const functions = getFunctions(app);
 
 // Analytics only runs in a real browser context (not SSR, not Node test runners)
 export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;

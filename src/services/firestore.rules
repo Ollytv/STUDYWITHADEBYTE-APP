@@ -2,24 +2,66 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Allowlist-based admin check (this project sets no custom claims).
+    // A signed-in user is an admin iff admins/{their uid} exists.
+    function isAdmin() {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
     // ── User root document ─────────────────────────────────────────────────
     // Only the authenticated owner can read or write their own user document.
     match /users/{userId} {
       allow read, write: if request.auth != null
                          && request.auth.uid == userId;
 
-      // ── All subcollections (classes, attendance, gpaCourses, etc.) ───────
-      // Strictly scoped to the document owner. No cross-user access possible.
+      // ── All subcollections (classes, attendance, gpaCourses, devices,
+      //    meta, etc.) — EXCLUDING notifications, which has its own
+      //    restricted rule below and must not fall through to this one.
       match /{subcollection}/{docId} {
         allow read, write: if request.auth != null
-                           && request.auth.uid == userId;
+                           && request.auth.uid == userId
+                           && subcollection != 'notifications';
       }
 
-      // ── Meta subcollection (profile, settings, fcmToken) ─────────────────
-      match /meta/{metaDoc} {
-        allow read, write: if request.auth != null
-                           && request.auth.uid == userId;
+      // ── Notification Center inbox ────────────────────────────────────────
+      // Entries are fanned out server-side by Cloud Functions (Admin SDK,
+      // which bypasses these rules entirely). Clients may only read their
+      // own notifications and flip `read` — never create or delete one.
+      match /notifications/{notificationId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow update: if request.auth != null
+                      && request.auth.uid == userId
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+        allow create, delete: if false;
       }
+    }
+
+    // ── Admin allowlist ───────────────────────────────────────────────────────
+    // A user may only read their OWN doc (to self-check admin status in the
+    // UI). No client — admin or not — may create/update/delete entries here;
+    // adding an admin is an out-of-band operation (Console or Admin SDK
+    // script), never something reachable through the deployed app.
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // ── Admin notification campaigns (admin panel) ───────────────────────────
+    // Admins may create a pending campaign for the scheduler to pick up;
+    // status transitions (sending/sent/failed) are Cloud-Functions-only.
+    match /notificationCampaigns/{campaignId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+                    && request.resource.data.createdBy == request.auth.uid
+                    && request.resource.data.status == 'pending';
+      allow update, delete: if false;
+    }
+
+    // ── Send/delivery logs — admin-readable, server-write only ──────────────
+    match /notificationLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
 
     // ── Default deny — blocks everything not explicitly matched above ───────

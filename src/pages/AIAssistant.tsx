@@ -15,6 +15,8 @@ import {
   makeUserMessage, makeAssistantMessage,
 } from '../services/aiChat';
 import { generateId } from '../utils/id';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../routes';
 
 // ── Markdown renderer ─────────────────────────────────────────────────────────
 function renderMarkdown(text: string): string {
@@ -153,7 +155,7 @@ const SUGGESTIONS = [
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function AIAssistant() {
-  const { setActiveTab } = useStore();
+  const navigate = useNavigate();
 
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [activeConvId, setActiveConvId]   = useState<string | null>(null);
@@ -471,7 +473,7 @@ export default function AIAssistant() {
       <div className="flex items-center justify-between px-4 pt-14 pb-3 border-b border-white/5 shrink-0">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setActiveTab('more')}
+            onClick={() => navigate(ROUTES.app.more)}
             className="w-9 h-9 rounded-xl bg-dark-800 border border-white/8 flex items-center justify-center text-dark-400 hover:text-white transition-colors"
           >
             <ChevronLeft size={18} />

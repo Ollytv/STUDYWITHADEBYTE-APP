@@ -2,11 +2,11 @@
 //
 // ── ARCHITECTURE ────────────────────────────────────────────────────────────
 //
-//  This service owns ALL notification logic. It has three jobs:
-//
 //  1. FCM REGISTRATION — requests permission, retrieves an FCM device token,
-//     and saves it to Firestore so the service worker can use it for
-//     background push delivery.
+//     and upserts it under users/{uid}/devices/{tokenHash} so a user can have
+//     multiple concurrent devices. Token hash = SHA-256(token), so re-registering
+//     the same token is a no-op write (dedup) and rotated tokens replace the
+//     stale device doc instead of accumulating duplicates.
 //
 //  2. SCHEDULER — reads today's classes, computes milliseconds until each
 //     one starts (± lead-time offsets), and sets precise setTimeout handles.
@@ -15,8 +15,11 @@
 //     visibility. Fired class IDs are tracked in a Set to prevent duplicates.
 //
 //  3. SOUND — synthesises a short alert tone via the Web Audio API.
-//     No audio file needed; works offline; respects browser autoplay policy
-//     (sound only plays after a user gesture has occurred in the session).
+//
+//  4. CLICK / DEEP LINK — background clicks are handled by
+//     firebase-messaging-sw.js, which postMessages the deep link back to any
+//     open client. This module relays that into the same CustomEvent bus the
+//     rest of the app already listens on.
 //
 // ── BACKGROUND DELIVERY ─────────────────────────────────────────────────────
 //
@@ -28,24 +31,23 @@
 // ────────────────────────────────────────────────────────────────────────────
 
 import { getToken, onMessage } from 'firebase/messaging';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { messagingPromise, db, auth } from './firebase';
 import { CourseClass } from '../types';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-// Your VAPID public key — get this from:
-// Firebase Console → Project Settings → Cloud Messaging → Web Push certificates
-// Click "Generate key pair" if you haven't already, then paste the Key Pair value here.
-// In .env:
-// VITE_FIREBASE_VAPID_KEY=your_actual_vapid_key_here
-
-// In notificationService.ts:
+// VITE_FIREBASE_VAPID_KEY — Firebase Console → Project Settings → Cloud
+// Messaging → Web Push certificates.
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
 if (!VAPID_KEY) {
   console.error('[Notifications] VITE_FIREBASE_VAPID_KEY is not set. Push notifications will not work.');
 }
+
+// Key used to detect token rotation between sessions without re-registering
+// on every load.
+const LAST_TOKEN_STORAGE_KEY = 'studibyte:lastFcmToken';
 
 // How many minutes before class to fire each alert tier
 const LEAD_TIMES: Record<string, number> = {
@@ -59,19 +61,14 @@ const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 
 // ── State ────────────────────────────────────────────────────────────────────
 
-// Active setTimeout handles — cleared when rescheduling or on cleanup
 const activeTimers: ReturnType<typeof setTimeout>[] = [];
-
-// Deduplication set — tracks "classId-leadMinutes" keys already fired today
-// so a re-render or hot-reload can't double-fire the same alert
 const firedToday = new Set<string>();
-
-// Track which calendar date firedToday was last reset for
 let lastResetDate = '';
 
-// ── Public event name ────────────────────────────────────────────────────────
-// The React hook listens for this on window to show the in-app popup
-export const NOTIFICATION_EVENT = 'studibyte:classAlert';
+// ── Public event names ───────────────────────────────────────────────────────
+export const NOTIFICATION_EVENT = 'studibyte:classAlert';        // class-schedule alerts (ClassAlertPayload)
+export const PUSH_NOTIFICATION_EVENT = 'studibyte:pushAlert';    // admin-sent FCM pushes (PushNotificationData)
+export const NOTIFICATION_CLICK_EVENT = 'studibyte:notificationClick';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 export interface ClassAlertPayload {
@@ -91,11 +88,18 @@ export interface NotificationSettings {
   sound:            boolean;
 }
 
+// Shape of the `data` payload on every FCM message this app sends/receives.
+// Push payloads only carry strings — coerce on the way in.
+export interface PushNotificationData {
+  notificationId?: string;
+  title?:          string;
+  body?:           string;
+  imageUrl?:       string;
+  deepLink?:       string;
+  type?:           string;
+}
+
 // ── Sound synthesis ──────────────────────────────────────────────────────────
-// Uses the Web Audio API to generate a two-tone chime — no audio file required.
-// The browser's autoplay policy means this only works after a user gesture has
-// happened in the tab. If the app is in the background when the timer fires,
-// sound is silently skipped (the OS notification handles user attention instead).
 let audioCtx: AudioContext | null = null;
 
 function getAudioContext(): AudioContext | null {
@@ -111,15 +115,12 @@ export function playAlertSound(): void {
   const ctx = getAudioContext();
   if (!ctx) return;
 
-  // Resume suspended context (required after user gesture on some browsers)
   if (ctx.state === 'suspended') {
     ctx.resume().catch(() => {});
-    return; // sound will play on next interaction; skip silently
+    return;
   }
 
   const now = ctx.currentTime;
-
-  // Two-tone rising chime: 520 Hz → 780 Hz
   const tones = [
     { freq: 520, start: now,        duration: 0.18 },
     { freq: 780, start: now + 0.22, duration: 0.28 },
@@ -129,11 +130,10 @@ export function playAlertSound(): void {
     const osc  = ctx.createOscillator();
     const gain = ctx.createGain();
 
-    osc.type      = 'sine';
+    osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, start);
 
-    // Soft attack + decay envelope so it doesn't sound harsh
-    gain.gain.setValueAtTime(0,    start);
+    gain.gain.setValueAtTime(0, start);
     gain.gain.linearRampToValueAtTime(0.35, start + 0.04);
     gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
 
@@ -145,12 +145,31 @@ export function playAlertSound(): void {
   });
 }
 
-// ── FCM permission + token ───────────────────────────────────────────────────
+// ── Token hashing (dedup key) ────────────────────────────────────────────────
+
+async function hashToken(token: string): Promise<string> {
+  const bytes = new TextEncoder().encode(token);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function detectPlatform(): string {
+  const ua = navigator.userAgent;
+  if (/android/i.test(ua)) return 'android';
+  if (/iphone|ipad|ipod/i.test(ua)) return 'ios';
+  return 'web';
+}
+
+// ── FCM permission + token registration ──────────────────────────────────────
 
 /**
- * Requests notification permission from the browser, retrieves the FCM device
- * token, and persists it to Firestore under the user's profile so the service
- * worker (and future server-side senders) can address this device.
+ * Requests notification permission, retrieves the FCM device token, and
+ * upserts it to users/{uid}/devices/{tokenHash}. Supports multiple devices
+ * per user (each device gets its own doc, keyed by a hash of its token) and
+ * is idempotent: registering the same token twice does not create duplicates,
+ * and a rotated token removes the previous device doc for this browser.
  *
  * Returns the token string on success, or null if permission was denied or
  * FCM is not supported in this browser.
@@ -169,24 +188,100 @@ export async function requestAndSaveFCMToken(): Promise<string | null> {
       return null;
     }
 
-    const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+    const registration = await navigator.serviceWorker.ready.catch(() => undefined);
+    const token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: registration,
+    });
     if (!token) return null;
 
-    // Persist token to Firestore — stored under users/{uid}/meta/fcmToken
-    // so it's available if you ever want to send targeted server-side pushes
-    const user = auth.currentUser;
-    if (user) {
-      await setDoc(
-        doc(db, 'users', user.uid, 'meta', 'fcmToken'),
-        { token, updatedAt: serverTimestamp(), platform: navigator.platform },
-        { merge: true }
-      );
-    }
-
+    await persistToken(token);
     return token;
   } catch (err) {
     console.error('[Notifications] FCM token error:', err);
     return null;
+  }
+}
+
+/**
+ * Writes/updates the device doc for the given token and cleans up the
+ * previous token's doc if it rotated since the last session.
+ */
+async function persistToken(token: string): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const tokenHash = await hashToken(token);
+  const deviceRef = doc(db, 'users', user.uid, 'devices', tokenHash);
+
+  const previousToken = localStorage.getItem(LAST_TOKEN_STORAGE_KEY);
+  if (previousToken && previousToken !== token) {
+    const prevHash = await hashToken(previousToken);
+    if (prevHash !== tokenHash) {
+      await deleteDoc(doc(db, 'users', user.uid, 'devices', prevHash)).catch(() => {});
+    }
+  }
+
+  const existing = await getDoc(deviceRef).catch(() => null);
+
+  await setDoc(
+    deviceRef,
+    {
+      token,
+      platform:   detectPlatform(),
+      userAgent:  navigator.platform,
+      updatedAt:  serverTimestamp(),
+      ...(existing?.exists() ? {} : { createdAt: serverTimestamp() }),
+    },
+    { merge: true }
+  );
+
+  localStorage.setItem(LAST_TOKEN_STORAGE_KEY, token);
+}
+
+/**
+ * Re-checks the current FCM token against the last known one and persists it
+ * if it changed. Cheap to call often (e.g. on tab focus) — getToken() returns
+ * the cached token instantly unless a real rotation occurred.
+ */
+export async function refreshFCMTokenIfNeeded(): Promise<void> {
+  try {
+    if (getPermissionState() !== 'granted') return;
+    const messaging = await messagingPromise;
+    if (!messaging) return;
+
+    const registration = await navigator.serviceWorker.ready.catch(() => undefined);
+    const token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: registration,
+    });
+    if (!token) return;
+
+    const previousToken = localStorage.getItem(LAST_TOKEN_STORAGE_KEY);
+    if (token !== previousToken) {
+      await persistToken(token);
+    }
+  } catch (err) {
+    console.warn('[Notifications] Token refresh check failed:', err);
+  }
+}
+
+/**
+ * Removes this browser's device doc — call on sign-out so a stale token
+ * doesn't keep receiving pushes for an account the user has left.
+ */
+export async function unregisterCurrentDevice(): Promise<void> {
+  const user = auth.currentUser;
+  const token = localStorage.getItem(LAST_TOKEN_STORAGE_KEY);
+  if (!user || !token) return;
+
+  try {
+    const tokenHash = await hashToken(token);
+    await deleteDoc(doc(db, 'users', user.uid, 'devices', tokenHash));
+  } catch (err) {
+    console.warn('[Notifications] Failed to unregister device:', err);
+  } finally {
+    localStorage.removeItem(LAST_TOKEN_STORAGE_KEY);
   }
 }
 
@@ -203,46 +298,68 @@ export function getPermissionState(): NotificationPermission {
 
 /**
  * When the app is in the foreground, FCM suppresses the OS notification and
- * delivers it here instead. We re-dispatch it as our custom DOM event so the
- * React hook can show the in-app alert UI.
- *
- * Call this once after FCM is initialised (done inside useNotifications hook).
+ * delivers it here instead. Re-dispatched as a DOM CustomEvent so any part
+ * of the app (in-app banner, notification center badge) can react.
  */
 export async function listenForForegroundMessages(): Promise<() => void> {
   const messaging = await messagingPromise;
   if (!messaging) return () => {};
 
   const unsubscribe = onMessage(messaging, (payload) => {
-    const data = payload.data as Partial<ClassAlertPayload> | undefined;
-    if (!data?.classId) return;
+    const data = payload.data as PushNotificationData | undefined;
+    const title = data?.title ?? payload.notification?.title;
+    const body  = data?.body  ?? payload.notification?.body;
+    if (!title) return;
 
     window.dispatchEvent(
-      new CustomEvent<ClassAlertPayload>(NOTIFICATION_EVENT, { detail: data as ClassAlertPayload })
+      new CustomEvent<PushNotificationData & { title: string; body?: string }>(PUSH_NOTIFICATION_EVENT, {
+        detail: { ...data, title, body },
+      })
     );
+
+    // Foreground pushes don't auto-show an OS notification, so surface one
+    // manually when the tab isn't focused/visible.
+    if (document.visibilityState !== 'visible' && Notification.permission === 'granted') {
+      new Notification(title, {
+        body,
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/icon-72x72.png',
+        tag: data?.notificationId,
+        data: { deepLink: data?.deepLink },
+      });
+    }
   });
 
   return unsubscribe;
 }
 
-// ── Scheduler ────────────────────────────────────────────────────────────────
-
 /**
- * Clears all currently scheduled notification timers.
- * Called before rescheduling (e.g. when classes change) and on cleanup.
+ * Listens for deep-link clicks relayed from the service worker
+ * (firebase-messaging-sw.js postMessages the client on notificationclick)
+ * and re-dispatches them as a same DOM CustomEvent bus for the router to
+ * consume. Call once near app root.
  */
+export function listenForNotificationClicks(): () => void {
+  const handler = (event: MessageEvent) => {
+    if (event.data?.type !== 'NOTIFICATION_CLICK') return;
+    window.dispatchEvent(
+      new CustomEvent<{ deepLink?: string; notificationId?: string }>(NOTIFICATION_CLICK_EVENT, {
+        detail: { deepLink: event.data.deepLink, notificationId: event.data.notificationId },
+      })
+    );
+  };
+
+  navigator.serviceWorker?.addEventListener('message', handler);
+  return () => navigator.serviceWorker?.removeEventListener('message', handler);
+}
+
+// ── Class scheduler ──────────────────────────────────────────────────────────
+
 export function clearScheduledNotifications(): void {
   activeTimers.forEach(clearTimeout);
   activeTimers.length = 0;
 }
 
-/**
- * Schedules notification timers for all of today's classes based on the
- * user's notification settings. Safe to call multiple times — it clears
- * existing timers first and uses a deduplication set to prevent double-firing.
- *
- * @param classes  — full list of CourseClass objects from the store
- * @param settings — user's notification preferences
- */
 export function scheduleNotifications(
   classes: CourseClass[],
   settings: NotificationSettings
@@ -252,14 +369,12 @@ export function scheduleNotifications(
     return;
   }
 
-  // Reset dedup set once per calendar day
   const today = new Date().toISOString().split('T')[0];
   if (lastResetDate !== today) {
     firedToday.clear();
     lastResetDate = today;
   }
 
-  // Filter to today's classes only
   const todayName = DAY_NAMES[new Date().getDay()];
   const todayClasses = classes.filter(c => c.day === todayName);
 
@@ -267,7 +382,6 @@ export function scheduleNotifications(
 
   clearScheduledNotifications();
 
-  // Build lead-time offsets the user has enabled, plus 0 (class starting now)
   const leadMinutes: number[] = [0];
   Object.entries(LEAD_TIMES).forEach(([key, mins]) => {
     if (settings[key as keyof NotificationSettings]) leadMinutes.push(mins);
@@ -280,15 +394,14 @@ export function scheduleNotifications(
 
     leadMinutes.forEach(leadMins => {
       const dedupKey = `${cls.id}-${leadMins}`;
-      if (firedToday.has(dedupKey)) return; // already fired this session
+      if (firedToday.has(dedupKey)) return;
 
-      // Calculate ms until (classTime - leadMins) from right now
       const now          = new Date();
       const fireAt       = new Date();
       fireAt.setHours(classHour, classMinute - leadMins, 0, 0);
       const msUntilFire  = fireAt.getTime() - now.getTime();
 
-      if (msUntilFire < 0) return; // already passed today
+      if (msUntilFire < 0) return;
 
       const handle = setTimeout(() => {
         firedToday.add(dedupKey);
@@ -302,13 +415,10 @@ export function scheduleNotifications(
           leadMins,
         };
 
-        // 1️⃣ Dispatch in-app event (React hook picks this up for the popup UI)
         window.dispatchEvent(
           new CustomEvent<ClassAlertPayload>(NOTIFICATION_EVENT, { detail: payload })
         );
 
-        // 2️⃣ Web Notification API — shows OS-level notification if app is visible
-        //    but the tab is not focused (e.g. user is on another tab)
         if (Notification.permission === 'granted') {
           const title = leadMins === 0
             ? `🔔 ${cls.courseName} is starting now!`
@@ -318,12 +428,11 @@ export function scheduleNotifications(
             body: `${cls.courseCode}  •  ${cls.venue}  •  ${cls.startTime}`,
             icon: '/icons/icon-192x192.png',
             badge: '/icons/icon-72x72.png',
-            tag: dedupKey, // browser deduplicates same-tag notifications
+            tag: dedupKey,
             silent: false,
           });
         }
 
-        // 3️⃣ Sound (only if user enabled it and audio context is ready)
         if (settings.sound) playAlertSound();
 
       }, msUntilFire);

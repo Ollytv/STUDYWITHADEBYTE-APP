@@ -1,92 +1,69 @@
 // public/firebase-messaging-sw.js
 //
-// ── SERVICE WORKER ───────────────────────────────────────────────────────────
+// Registered by the browser at /firebase-messaging-sw.js (must live at the
+// site root to control the whole scope). Handles push delivery while the
+// app is closed/backgrounded, and relays notification clicks back to any
+// open tab so the SPA router can deep-link without a full reload.
 //
-// This file MUST live at /public/firebase-messaging-sw.js so it is served
-// from the root of your domain (e.g. https://yourapp.com/firebase-messaging-sw.js).
-// The browser registers it at the root scope, which is required for FCM.
-//
-// HOW IT WORKS:
-//   When your app tab is CLOSED or BACKGROUNDED, Firebase Cloud Messaging
-//   sends a push event directly to this service worker. The SW is kept alive
-//   by the browser independently of the tab. It calls showNotification() to
-//   surface the OS-level alert the user sees in their notification tray.
-//
-// ── IMPORTANT SETUP STEP ────────────────────────────────────────────────────
-//   Replace the firebaseConfig values below with your actual project config.
-//   They must match what is in src/services/firebase.ts exactly.
-// ────────────────────────────────────────────────────────────────────────────
+// NOTE: this file cannot use ES module imports or environment variables —
+// it runs in the browser's service worker scope, outside Vite's build.
+// The Firebase config values below are public client identifiers (same ones
+// already shipped in index.html/bundle), not secrets.
 
-importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
 
-// ── Firebase config (must match src/services/firebase.ts) ───────────────────
 firebase.initializeApp({
-  apiKey:            "AIzaSyDbi7UoDBd0BQi8orZSPpLpa5bAcLAywuU",
-  authDomain:        "studywithadebyte.firebaseapp.com",
-  projectId:         "studywithadebyte",
-  storageBucket:     "studywithadebyte.firebasestorage.app",
-  messagingSenderId: "732799888407",
-  appId:             "1:732799888407:web:1aa5f9aca4e94194654052",
+  apiKey:            self.__FIREBASE_CONFIG__?.apiKey            || '__VITE_FIREBASE_API_KEY__',
+  authDomain:        self.__FIREBASE_CONFIG__?.authDomain        || '__VITE_FIREBASE_AUTH_DOMAIN__',
+  projectId:         self.__FIREBASE_CONFIG__?.projectId         || '__VITE_FIREBASE_PROJECT_ID__',
+  storageBucket:     self.__FIREBASE_CONFIG__?.storageBucket     || '__VITE_FIREBASE_STORAGE_BUCKET__',
+  messagingSenderId: self.__FIREBASE_CONFIG__?.messagingSenderId || '__VITE_FIREBASE_MESSAGING_SENDER_ID__',
+  appId:             self.__FIREBASE_CONFIG__?.appId             || '__VITE_FIREBASE_APP_ID__',
 });
 
 const messaging = firebase.messaging();
 
-// ── Background message handler ───────────────────────────────────────────────
-// Called when a push arrives and the app tab is closed or hidden.
-// FCM delivers the message here instead of to the app JS.
+// ── Background message → OS notification ─────────────────────────────────────
 messaging.onBackgroundMessage((payload) => {
-  const data        = payload.data || {};
-  const leadMins    = parseInt(data.leadMins || '0', 10);
-  const courseName  = data.courseName  || 'Class';
-  const courseCode  = data.courseCode  || '';
-  const venue       = data.venue       || '';
-  const startTime   = data.startTime   || '';
+  const data = payload.data || {};
+  const title = data.title || payload.notification?.title || 'StudiByte';
+  const body  = data.body  || payload.notification?.body  || '';
 
-  const title = leadMins === 0
-    ? `🔔 ${courseName} is starting now!`
-    : `⏰ ${courseName} in ${leadMins} minute${leadMins > 1 ? 's' : ''}`;
-
-  const body = [courseCode, venue, startTime].filter(Boolean).join('  •  ');
-
-  // showNotification renders the OS-level alert in the notification tray
-  return self.registration.showNotification(title, {
+  const options = {
     body,
-    icon:   '/icons/icon-192x192.png',
-    badge:  '/icons/icon-72x72.png',
-    tag:    `${data.classId}-${leadMins}`,   // prevents duplicate notifications
-    silent: false,
-    data:   { url: self.location.origin },   // used by notificationclick below
-    actions: [
-      { action: 'open',    title: '📖 Open App' },
-      { action: 'dismiss', title: 'Dismiss'     },
-    ],
-  });
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-72x72.png',
+    image: data.imageUrl || undefined,
+    tag: data.notificationId || undefined,
+    data: {
+      deepLink: data.deepLink || '/',
+      notificationId: data.notificationId || null,
+    },
+  };
+
+  self.registration.showNotification(title, options);
 });
 
-// ── Notification click handler ───────────────────────────────────────────────
-// When the user taps the notification in their tray, this opens the app.
+// ── Click → focus/open a client and hand it the deep link ────────────────────
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  if (event.action === 'dismiss') return;
-
-  const targetUrl = (event.notification.data && event.notification.data.url)
-    ? event.notification.data.url
-    : self.location.origin;
+  const deepLink = event.notification.data?.deepLink || '/';
+  const notificationId = event.notification.data?.notificationId || null;
+  const targetUrl = new URL(deepLink, self.location.origin).href;
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // If app is already open in a tab, focus it
-      for (const client of clientList) {
-        if (client.url.startsWith(targetUrl) && 'focus' in client) {
-          return client.focus();
-        }
+    (async () => {
+      const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+
+      const existing = clientList.find(c => new URL(c.url).origin === self.location.origin);
+      if (existing) {
+        existing.postMessage({ type: 'NOTIFICATION_CLICK', deepLink, notificationId });
+        return existing.focus();
       }
-      // Otherwise open a new tab
-      if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
-      }
-    })
+
+      return self.clients.openWindow(targetUrl);
+    })()
   );
 });

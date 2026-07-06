@@ -8,6 +8,8 @@ import { Input, Select, TextArea } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
 import { SemesterSwitcher } from '../components/ui/SemesterSwitcher';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../routes';
 
 type Filter = 'all' | 'pending' | 'completed' | 'overdue';
 
@@ -33,11 +35,11 @@ function DeadlineChip({ deadline, completed }: { deadline: string; completed: bo
 }
 
 export default function Assignments() {
-  const { assignments, addAssignment, deleteAssignment, toggleAssignment, activeSemester, activeAcademicYear, classes, setActiveTab } = useStore();
-  const [filter, setFilter] = useState<Filter>('all');
-  const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ title: '', courseCode: '', courseName: '', deadline: '', priority: 'medium' as Assignment['priority'], description: '' });
-
+  const { assignments, addAssignment, deleteAssignment, toggleAssignment, activeSemester, activeAcademicYear, classes } = useStore();
+  const navigate = useNavigate();
+ const [showAdd, setShowAdd] = useState(false);
+const [filter, setFilter] = useState<Filter>('all'); // ← ADD THIS: was missing, caused both errors
+const [form, setForm] = useState({ title: '', courseCode: '', courseName: '', deadline: '', priority: 'medium' as Assignment['priority'], description: '' });
   const courseOptions = useMemo(() => {
     const unique = new Map<string, string>();
     classes.forEach(c => unique.set(c.courseCode, c.courseName));
@@ -97,7 +99,7 @@ const handleSave = async () => {
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setActiveTab('more')}
+              onClick={() => navigate(ROUTES.app.more)}
               className="w-9 h-9 rounded-xl bg-dark-800 border border-white/8 flex items-center justify-center text-dark-400 hover:text-white transition-colors"
             >
               <ChevronLeft size={18} />

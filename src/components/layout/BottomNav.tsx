@@ -1,60 +1,49 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutDashboard, CalendarDays, CheckSquare, Grid2X2, Settings } from 'lucide-react';
-import { useStore } from '../../hooks/useStore';
-import { TabRoute } from '../../types';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../routes';
 
-const tabs: { id: TabRoute; icon: React.ComponentType<any>; label: string }[] = [
-  { id: 'dashboard',  icon: LayoutDashboard, label: 'Home' },
-  { id: 'timetable',  icon: CalendarDays,    label: 'Schedule' },
-  { id: 'attendance', icon: CheckSquare,     label: 'Attend' },
-  { id: 'more',       icon: Grid2X2,         label: 'More' },
-  { id: 'settings',   icon: Settings,        label: 'Profile' },
-];
+const tabs = [
+  { to: ROUTES.app.root,       icon: LayoutDashboard, label: 'Home' },
+  { to: ROUTES.app.timetable,  icon: CalendarDays,    label: 'Schedule' },
+  { to: ROUTES.app.attendance, icon: CheckSquare,     label: 'Attend' },
+  { to: ROUTES.app.more,       icon: Grid2X2,         label: 'More' },
+  { to: ROUTES.app.settings,   icon: Settings,        label: 'Profile' },
+] as const;
 
-// ── Nav sizing — single source of truth ─────────────────────────────────────
-// These are the exact same numbers already used below (content row height +
-// top/bottom padding). Keeping them as constants lets us publish an accurate
-// `--bottom-nav-height` CSS variable that other fixed elements (e.g. the AI
-// chat input) can read, instead of guessing the nav's height with a magic
-// pixel value elsewhere in the app.
-const NAV_CONTENT_HEIGHT = 52; // matches each tab button's minHeight
-const NAV_PADDING_Y      = 8;  // top/bottom padding inside the nav (excl. safe-area)
+const NAV_CONTENT_HEIGHT = 52;
+const NAV_PADDING_Y      = 8;
 
 export default function BottomNav() {
-  const { activeTab, setActiveTab } = useStore();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-[55]">
-      {/* Publish the nav's true rendered height (including the safe-area
-          inset) as a global CSS variable. Purely informational — changes
-          nothing visually — so fixed siblings elsewhere in the app can sit
-          flush above the nav instead of underneath it. */}
       <style>{`
         :root {
           --bottom-nav-height: calc(${NAV_CONTENT_HEIGHT + NAV_PADDING_Y * 2}px + env(safe-area-inset-bottom, 0px));
         }
       `}</style>
-      {/* Frosted glass blur layer */}
       <div className="absolute inset-0 backdrop-blur-2xl"
         style={{ background: 'rgba(10,10,15,0.85)', borderTop: '1px solid rgba(255,255,255,0.06)' }}
       />
       <div className="relative flex items-end justify-around max-w-lg mx-auto px-3"
         style={{ paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_PADDING_Y}px)`, paddingTop: NAV_PADDING_Y }}
       >
-        {tabs.map((tab, idx) => {
+        {tabs.map(tab => {
           const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
+          const isActive = location.pathname === tab.to;
 
           return (
             <motion.button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              key={tab.to}
+              onClick={() => navigate(tab.to)}
               className="relative flex flex-col items-center gap-1 flex-1 touch-manipulation"
               style={{ minHeight: NAV_CONTENT_HEIGHT, WebkitTapHighlightColor: 'transparent' }}
               whileTap={{ scale: 0.82 }}
               transition={{ type: 'spring', stiffness: 500, damping: 25 }}
             >
-              {/* Active pill background */}
               <AnimatePresence>
                 {isActive && (
                   <motion.div
@@ -69,7 +58,6 @@ export default function BottomNav() {
                 )}
               </AnimatePresence>
 
-              {/* Icon with dot indicator */}
               <div className="relative mt-1.5 flex items-center justify-center w-7 h-7">
                 <Icon
                   size={20}
@@ -77,7 +65,6 @@ export default function BottomNav() {
                   className="transition-colors duration-200"
                   style={{ color: isActive ? '#4ade80' : '#4b5563' }}
                 />
-                {/* Active dot above icon */}
                 {isActive && (
                   <motion.div
                     className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-green-400"

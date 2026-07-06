@@ -14,6 +14,8 @@ import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
 import { SemesterSwitcher } from '../components/ui/SemesterSwitcher';
 import { generateId } from '../utils/id';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../routes';
 
 // ── Config ─────────────────────────────────────────────────────────────────
 const TYPE_CONFIG: Record<CourseMaterial['type'], {
@@ -81,7 +83,8 @@ function PreviewModal({ material, onClose }: { material: CourseMaterial; onClose
 
 // ── Main component ─────────────────────────────────────────────────────────
 export default function Materials() {
-  const { materials, addMaterial, deleteMaterial, activeSemester, activeAcademicYear, classes, setActiveTab } = useStore();
+  const { materials, addMaterial, deleteMaterial, activeSemester, activeAcademicYear, classes } = useStore();
+  const navigate = useNavigate();
 
   const [showAdd, setShowAdd]           = useState(false);
   const [filterCourse, setFilterCourse] = useState('');
@@ -321,7 +324,7 @@ export default function Materials() {
         <div className="px-4 pt-14 pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button onClick={() => setActiveTab('more')}
+              <button onClick={() => navigate(ROUTES.app.more)}
                 className="w-9 h-9 rounded-xl bg-dark-800 border border-white/8 flex items-center justify-center text-dark-400 hover:text-white transition-colors touch-manipulation">
                 <ChevronLeft size={18} />
               </button>

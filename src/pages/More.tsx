@@ -3,6 +3,9 @@ import { TrendingUp, Timer, ClipboardList, BookOpen, ChevronRight, Sparkles, Sta
 import { useStore } from '../hooks/useStore';
 import { calculateGPA, getGPAClass } from '../utils/gpa';
 import { useMemo } from 'react';
+// add import
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../routes';
 
 const features = [
   {
@@ -13,7 +16,7 @@ const features = [
     color: '#fbbf24',
     bg: 'rgba(251,191,36,0.1)',
     border: 'rgba(251,191,36,0.2)',
-    tab: 'gpa' as const,
+    to: ROUTES.app.gpa,
     emoji: '📊',
   },
   {
@@ -24,7 +27,7 @@ const features = [
     color: '#fb923c',
     bg: 'rgba(251,146,60,0.1)',
     border: 'rgba(251,146,60,0.2)',
-    tab: 'timer' as const,
+     to: ROUTES.app.timer,
     emoji: '⏱️',
   },
   {
@@ -35,7 +38,7 @@ const features = [
     color: '#c084fc',
     bg: 'rgba(192,132,252,0.1)',
     border: 'rgba(192,132,252,0.2)',
-    tab: 'assignments' as const,
+    to: ROUTES.app.assignments,
     emoji: '📋',
   },
   {
@@ -46,7 +49,7 @@ const features = [
     color: '#22d3ee',
     bg: 'rgba(34,211,238,0.1)',
     border: 'rgba(34,211,238,0.2)',
-    tab: 'materials' as const,
+    to: ROUTES.app.materials,
     emoji: '📚',
   },
   {
@@ -57,14 +60,15 @@ const features = [
     color: '#a855f7',
     bg: 'rgba(168,85,247,0.1)',
     border: 'rgba(168,85,247,0.2)',
-    tab: 'ai' as const,
+    to: ROUTES.app.ai,
     emoji: '🤖',
   },
 ];
 
 export default function More() {
-  const { setActiveTab, gpaCourses, assignments, materials, activeSemester, activeAcademicYear, profile } = useStore();
-
+  const { gpaCourses, assignments, materials, activeSemester, activeAcademicYear, profile } = useStore();
+  const navigate = useNavigate();
+  
   const semGPA = useMemo(
     () => gpaCourses.filter(c => c.semester === activeSemester && c.academicYear === activeAcademicYear),
     [gpaCourses, activeSemester, activeAcademicYear]
@@ -125,7 +129,8 @@ export default function More() {
       {/* ── GPA HERO CARD (if data exists) ──────────────────────────────── */}
       {semGPA.length > 0 && (
         <motion.button
-          onClick={() => setActiveTab('gpa')}
+         // GPA hero card
+          onClick={() => navigate(ROUTES.app.gpa)}
           className="mx-5 mb-5 rounded-2xl p-5 w-[calc(100%-40px)] text-left relative overflow-hidden touch-manipulation"
           style={{ background: 'linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.05))', border: '1px solid rgba(251,191,36,0.3)' }}
           initial={{ opacity: 0, y: 20 }}
@@ -179,7 +184,8 @@ export default function More() {
         {features.map((feat, i) => (
           <motion.button
             key={feat.id}
-            onClick={() => setActiveTab(feat.tab)}
+           // feature button
+            onClick={() => navigate(feat.to)}
             className="w-full flex items-center gap-4 p-4 rounded-2xl text-left touch-manipulation relative overflow-hidden"
             style={{ background: feat.bg, border: `1px solid ${feat.border}` }}
             initial={{ opacity: 0, x: -20 }}

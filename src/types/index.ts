@@ -95,7 +95,6 @@ export function getProgramLevelMeta(value: ProgramLevel): ProgramLevelMeta {
 
 export type ColorLabel = 'green' | 'blue' | 'purple' | 'orange' | 'red' | 'yellow' | 'pink' | 'cyan' | 'teal' | 'indigo';
 export type Semester = 'First' | 'Second';
-export type TabRoute = 'dashboard' | 'timetable' | 'attendance' | 'more' | 'settings' | 'gpa' | 'timer' | 'assignments' | 'materials' | 'import' | 'ai';
 
 export interface CourseClass {
   id: string;

@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+// import line — remove TabRoute
 import {
   CourseClass, AttendanceRecord, StudentProfile, AppSettings,
-  GPACourse, Assignment, StudySession, CourseMaterial, TabRoute, Semester,
+  GPACourse, Assignment, StudySession, CourseMaterial, Semester,
   DEFAULT_PROGRAM_LEVEL, DEFAULT_CGPA_SCALE,
 } from '../types';
 import * as db from '../services/db';
@@ -67,7 +68,6 @@ interface AppState {
   materials: CourseMaterial[];
   profile: StudentProfile | null;
   settings: AppSettingsExtended;
-  activeTab: TabRoute;
   isLoading: boolean;
   showAddClass: boolean;
   editingClass: CourseClass | null;
@@ -84,7 +84,6 @@ interface AppState {
 
   // ── Data actions ───────────────────────────────────────────────────────────
   loadData: () => Promise<void>;
-  setActiveTab: (t: TabRoute) => void;
   setShowAddClass: (v: boolean) => void;
   setEditingClass: (c: CourseClass | null) => void;
   setActiveSemester: (s: Semester) => void;
@@ -121,7 +120,7 @@ export const useStore = create<AppState>()(
       classes: [], attendance: [], gpaCourses: [], assignments: [],
       studySessions: [], materials: [], profile: null,
       settings: DEFAULT_SETTINGS,
-      activeTab: 'dashboard', isLoading: false,
+     isLoading: false,
       showAddClass: false, editingClass: null,
       activeSemester: 'First',
       activeAcademicYear: `${new Date().getFullYear()}/${new Date().getFullYear() + 1}`,
@@ -272,8 +271,6 @@ export const useStore = create<AppState>()(
           set({ isLoading: false });
         }
       },
-
-      setActiveTab: t => set({ activeTab: t }),
       setShowAddClass: v => set({ showAddClass: v }),
       setEditingClass: c => set({ editingClass: c }),
       setActiveSemester: s => set({ activeSemester: s }),
@@ -467,7 +464,6 @@ export const useStore = create<AppState>()(
           notifications: s.settings.notifications,
           pin: (s.settings as any).pin,
         },
-        activeTab: s.activeTab,
         activeSemester: s.activeSemester,
         activeAcademicYear: s.activeAcademicYear,
       }),

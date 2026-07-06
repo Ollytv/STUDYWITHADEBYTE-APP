@@ -21,11 +21,14 @@ import { useStore } from '../hooks/useStore';
 import { CourseClass } from '../types';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../routes';
 
 type ParseStatus = 'idle' | 'parsing' | 'success' | 'error';
 
 export default function Import() {
-  const { setActiveTab, importClasses } = useStore();
+  const { importClasses } = useStore();
+  const navigate = useNavigate();
 
   const [file, setFile]       = useState<File | null>(null);
   const [status, setStatus]   = useState<ParseStatus>('idle');
@@ -78,8 +81,9 @@ export default function Import() {
     if (preview.length === 0) return;
     setSaving(true);
     try {
+      // handleSave success path
       await importClasses(preview);
-      setActiveTab('timetable');
+      navigate(ROUTES.app.timetable);
     } catch (err) {
       console.error('[Import] Save error:', err);
       setError('Could not save the imported classes. Please try again.');
@@ -94,7 +98,8 @@ export default function Import() {
       <div className="px-4 pt-14 pb-4">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setActiveTab('timetable')}
+           // header back button
+            onClick={() => navigate(ROUTES.app.timetable)}
             className="w-9 h-9 rounded-xl bg-dark-800 border border-white/8 flex items-center justify-center text-dark-400 hover:text-white transition-colors"
           >
             <ChevronLeft size={18} />

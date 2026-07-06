@@ -1,13 +1,18 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { CalendarDays, AlertTriangle, Clock, Plus, TrendingUp, FileText, Timer, ClipboardList, Zap, ChevronRight, BookOpen } from 'lucide-react';
-import { useMemo } from 'react';
+import { CalendarDays, AlertTriangle, Clock, Plus, TrendingUp, FileText, Timer, ClipboardList, Zap, ChevronRight, BookOpen, Bell, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../hooks/useStore';
 import { ClassCard } from '../components/timetable/ClassCard';
 import { ProgressRing } from '../components/ui/ProgressRing';
 import { Button } from '../components/ui/Button';
+import { NotificationCenter } from '../components/ui/NotificationCenter';
+import { subscribeUnreadCount } from '../services/notificationCenter';
 import { getCurrentDayName, sortClassesByTime, formatCountdown, getMinutesUntilClass, isClassNow } from '../utils/time';
 import { calculateGPA, getGPAClass, normaliseGPA } from '../utils/gpa';
 import { DEFAULT_CGPA_SCALE, CgpaScale } from '../types';
+// add import
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../routes';
 
 const MOTIVATIONS = [
   { text: "Keep pushing — your future self will thank you!", emoji: "🚀" },
@@ -27,13 +32,20 @@ const stagger = {
   },
 };
 
+// destructure — remove setActiveTab, add navigate
 export default function Dashboard() {
   const { classes, profile, assignments, gpaCourses, studySessions,
-    setActiveTab, setShowAddClass, markAttendance, setEditingClass,
+    setShowAddClass, markAttendance, setEditingClass,
     activeSemester, activeAcademicYear } = useStore();
+  const navigate = useNavigate();
 
   // Resolve school scale — falls back to 5.0 for users who pre-date this feature
   const scale: CgpaScale = profile?.cgpaScale ?? DEFAULT_CGPA_SCALE;
+
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => subscribeUnreadCount(setUnreadCount), []);
 
   const today = getCurrentDayName();
   const todayClasses = useMemo(() =>
@@ -127,34 +139,59 @@ export default function Dashboard() {
               </motion.p>
             </div>
 
-            {/* Avatar */}
-            <motion.button
-              onClick={() => setActiveTab('settings')}
-              className="relative flex-shrink-0"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2, type: 'spring', stiffness: 300 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              {/* Pulse ring */}
-              <motion.div
-                className="absolute inset-0 rounded-2xl border-2 border-green-400/40"
-                animate={{ scale: [1, 1.12, 1], opacity: [0.6, 0, 0.6] }}
-                transition={{ duration: 2.5, repeat: Infinity }}
-              />
-              <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-green-500/50">
-                {profile?.avatar ? (
-                  <img src={profile.avatar} alt="avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center"
-                    style={{ background: 'linear-gradient(135deg, #22c55e, #065f46)' }}>
-                    <span className="text-base font-black text-white">{initials}</span>
-                  </div>
+            <div className="flex items-center gap-3">
+              {/* Notification bell */}
+              <motion.button
+                onClick={() => setShowNotifications(true)}
+                className="relative w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.18, type: 'spring', stiffness: 300 }}
+                whileTap={{ scale: 0.9 }}
+                aria-label="Notifications"
+              >
+                <Bell size={18} className="text-dark-300" />
+                {unreadCount > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[9px] font-black text-dark-950"
+                    style={{ background: '#4ade80' }}
+                  >
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
                 )}
-              </div>
-              {/* Online indicator */}
-              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-green-400 border-2 border-dark-950" />
-            </motion.button>
+              </motion.button>
+
+              {/* Avatar */}
+              <motion.button
+                // line 162
+                onClick={() => navigate(ROUTES.app.settings)}
+                className="relative flex-shrink-0"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2, type: 'spring', stiffness: 300 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                {/* Pulse ring */}
+                <motion.div
+                  className="absolute inset-0 rounded-2xl border-2 border-green-400/40"
+                  animate={{ scale: [1, 1.12, 1], opacity: [0.6, 0, 0.6] }}
+                  transition={{ duration: 2.5, repeat: Infinity }}
+                />
+                <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-green-500/50">
+                  {profile?.avatar ? (
+                    <img src={profile.avatar} alt="avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center"
+                      style={{ background: 'linear-gradient(135deg, #22c55e, #065f46)' }}>
+                      <span className="text-base font-black text-white">{initials}</span>
+                    </div>
+                  )}
+                </div>
+                {/* Online indicator */}
+                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-green-400 border-2 border-dark-950" />
+              </motion.button>
+            </div>
           </div>
         </div>
       </div>
@@ -290,7 +327,8 @@ export default function Dashboard() {
             <h2 className="text-base font-black text-white" style={{ fontFamily: 'Georgia, serif' }}>Today's Classes</h2>
             <p className="text-xs text-dark-500">{today} · {todayClasses.length} scheduled</p>
           </div>
-          <button onClick={() => setActiveTab('timetable')}
+         
+          <button onClick={() => navigate(ROUTES.app.timetable)}
             className="flex items-center gap-1 text-xs font-semibold text-green-400 touch-manipulation">
             View all <ChevronRight size={13} />
           </button>
@@ -337,10 +375,11 @@ export default function Dashboard() {
         </div>
         <div className="grid grid-cols-2 gap-3 pb-2">
           {[
-            { label: 'Add Class',   icon: Plus,       action: () => { setActiveTab('timetable'); setShowAddClass(true); }, color: '#22c55e', bg: 'rgba(34,197,94,0.1)',   border: 'rgba(34,197,94,0.2)' },
-            { label: 'GPA Tracker', icon: TrendingUp, action: () => setActiveTab('gpa'),         color: '#fbbf24', bg: 'rgba(251,191,36,0.1)',  border: 'rgba(251,191,36,0.2)' },
-            { label: 'Assignments', icon: FileText,   action: () => setActiveTab('assignments'),  color: '#c084fc', bg: 'rgba(192,132,252,0.1)', border: 'rgba(192,132,252,0.2)' },
-            { label: 'Study Timer', icon: Timer,      action: () => setActiveTab('timer'),        color: '#fb923c', bg: 'rgba(251,146,60,0.1)',  border: 'rgba(251,146,60,0.2)' },
+            // lines 371–374
+            { label: 'Add Class',   icon: Plus,       action: () => { navigate(ROUTES.app.timetable); setShowAddClass(true); }, color: '#22c55e', bg: 'rgba(34,197,94,0.1)',   border: 'rgba(34,197,94,0.2)' },
+            { label: 'GPA Tracker', icon: TrendingUp, action: () => navigate(ROUTES.app.gpa),         color: '#fbbf24', bg: 'rgba(251,191,36,0.1)',  border: 'rgba(251,191,36,0.2)' },
+            { label: 'Assignments', icon: FileText,   action: () => navigate(ROUTES.app.assignments), color: '#c084fc', bg: 'rgba(192,132,252,0.1)', border: 'rgba(192,132,252,0.2)' },
+            { label: 'Study Timer', icon: Timer,      action: () => navigate(ROUTES.app.timer),       color: '#fb923c', bg: 'rgba(251,146,60,0.1)',  border: 'rgba(251,146,60,0.2)' },
           ].map((item, i) => (
             <motion.button key={item.label} onClick={item.action}
               className="rounded-2xl p-4 flex flex-col items-start gap-3 touch-manipulation text-left relative overflow-hidden"
@@ -362,6 +401,43 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
+
+      {/* ── NOTIFICATION CENTER OVERLAY ──────────────────────────────────── */}
+      <AnimatePresence>
+        {showNotifications && (
+          <motion.div
+            className="fixed inset-0 z-[80] flex justify-end"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="absolute inset-0"
+              style={{ background: 'rgba(5,8,10,0.75)' }}
+              onClick={() => setShowNotifications(false)}
+            />
+            <motion.div
+              className="relative w-full max-w-sm h-full overflow-y-auto px-4 pt-safe pb-6"
+              style={{ background: '#0a0a0f', borderLeft: '1px solid rgba(255,255,255,0.06)' }}
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+            >
+              <div className="flex items-center justify-end pt-4 pb-2">
+                <button
+                  onClick={() => setShowNotifications(false)}
+                  className="w-8 h-8 rounded-xl bg-dark-800 border border-white/8 flex items-center justify-center text-dark-400"
+                  aria-label="Close notifications"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              <NotificationCenter />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

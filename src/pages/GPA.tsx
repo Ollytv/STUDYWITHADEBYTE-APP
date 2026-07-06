@@ -10,6 +10,8 @@ import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
 import { SemesterSwitcher } from '../components/ui/SemesterSwitcher';
 import { ProgressRing } from '../components/ui/ProgressRing';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../routes';
 
 const gradeColor = (gp: number) =>
   gp >= 4 ? 'text-green-400' : gp >= 3 ? 'text-blue-400' : gp >= 2 ? 'text-yellow-400' : 'text-red-400';
@@ -53,8 +55,9 @@ function ScorePreview({ score, scale }: { score: string; scale: CgpaScale }) {
 export default function GPA() {
   const {
     gpaCourses, addGPACourse, updateGPACourse, deleteGPACourse,
-    activeSemester, activeAcademicYear, setActiveTab, profile,
+    activeSemester, activeAcademicYear, profile,
   } = useStore();
+  const navigate = useNavigate();
 
   // ── Resolve school scale from profile (default for existing users = 5.0) ──
   const scale: CgpaScale = profile?.cgpaScale ?? DEFAULT_CGPA_SCALE;
@@ -128,7 +131,7 @@ export default function GPA() {
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setActiveTab('more')}
+             onClick={() => navigate(ROUTES.app.more)}
               className="w-9 h-9 rounded-xl bg-dark-800 border border-white/8 flex items-center justify-center text-dark-400 hover:text-white transition-colors"
             >
               <ChevronLeft size={18} />
