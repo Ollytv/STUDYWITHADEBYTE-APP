@@ -1,32 +1,55 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+const { onRequest } = require("firebase-functions/v2/https");
+const admin = require("firebase-admin");
+const cors = require("cors")({ origin: true });
 
-const {setGlobalOptions} = require("firebase-functions");
-const {onRequest} = require("firebase-functions/https");
-const logger = require("firebase-functions/logger");
+// Initialize the Admin SDK to allow backend control
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
 
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
-setGlobalOptions({ maxInstances: 10 });
+exports.sendNotificationToAll = onRequest({ cors: true }, async (req, res) => {
+  // Wrap in CORS handling so the browser doesn't block the 500 error payload
+  cors(req, res, async () => {
+    try {
+      const payload = req.body.data?.payload || req.body.payload;
+      
+      if (!payload) {
+        return res.status(400).send({ data: { error: "Missing notification payload." } });
+      }
 
-// Create and deploy your first functions
-// https://firebase.google.com/docs/functions/get-started
+      const message = {
+        notification: {
+          title: payload.title,
+          body: payload.body,
+        },
+        // FCM requires topics or tokens; 'all' usually broadcasts to a global topic
+        topic: "allUsers", 
+      };
 
-// exports.helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+      if (payload.imageUrl) {
+        message.notification.imageUrl = payload.imageUrl;
+      }
+
+      // Send the payload via Firebase Cloud Messaging
+      const response = await admin.messaging().send(message);
+
+      // Firebase Callables expect responses nested inside a 'data' object
+      res.status(200).send({
+        data: {
+          successCount: 1,
+          failureCount: 0,
+          invalidTokensRemoved: 0,
+          messageId: response
+        }
+      });
+
+    } catch (error) {
+      console.error("FCM Error detailed log:", error);
+      res.status(500).send({ 
+        data: { 
+          error: error.message || "Internal server error running FCM wrapper." 
+        } 
+      });
+    }
+  });
+});
