@@ -35,6 +35,23 @@ export interface SendResult {
   invalidTokensRemoved: number;
 }
 
+/**
+ * Strips optional fields that are empty/whitespace so they're omitted from
+ * the payload entirely — never sent as `undefined`, since httpsCallable's
+ * transport serializes `undefined` values as `null`, not as an absent key,
+ * which then fails the Cloud Function's `!== undefined` checks.
+ */
+function sanitizePayload(payload: NotificationPayloadInput): NotificationPayloadInput {
+  const clean: NotificationPayloadInput = {
+    title: payload.title.trim(),
+    body: payload.body.trim(),
+    deepLink: payload.deepLink?.trim() || '/',
+    type: payload.type?.trim() || 'general',
+  };
+  if (payload.imageUrl?.trim()) clean.imageUrl = payload.imageUrl.trim();
+  return clean;
+}
+
 const sendToAllFn     = httpsCallable<{ payload: NotificationPayloadInput }, SendResult>(functions, 'sendNotificationToAll');
 const sendToUserFn    = httpsCallable<{ uid: string; payload: NotificationPayloadInput }, SendResult>(functions, 'sendNotificationToUser');
 const sendToSegmentFn = httpsCallable<{ field: string; value: string; payload: NotificationPayloadInput }, SendResult>(functions, 'sendNotificationToSegment');
@@ -43,10 +60,12 @@ const sendToSegmentFn = httpsCallable<{ field: string; value: string; payload: N
  * Sends immediately (target = all / single user / segment). Throws on
  * failure — callers should surface functions/permission-denied etc. to the UI.
  */
-export async function sendNotificationNow(
+
+ export async function sendNotificationNow(
   target: NotificationTarget,
   payload: NotificationPayloadInput
 ): Promise<SendResult> {
+  payload = sanitizePayload(payload);   // ← ADD THIS LINE
   if (target.mode === 'all') {
     const res = await sendToAllFn({ payload });
     return res.data;
@@ -69,6 +88,7 @@ export async function scheduleNotificationCampaign(
   payload: NotificationPayloadInput,
   scheduledAt: Date
 ): Promise<string> {
+  payload = sanitizePayload(payload);   // ← ADD THIS LINE
   const user = auth.currentUser;
   if (!user) throw new Error('Not authenticated');
 

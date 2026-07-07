@@ -18,8 +18,10 @@ function validatePayload(payload: unknown): NotificationPayloadInput {
   if (typeof p.body !== 'string' || p.body.trim().length === 0 || p.body.length > MAX_BODY_LEN) {
     throw new HttpsError('invalid-argument', `body must be a non-empty string ≤ ${MAX_BODY_LEN} chars.`);
   }
-  if (p.imageUrl !== undefined && (typeof p.imageUrl !== 'string' || !/^https:\/\//.test(p.imageUrl))) {
+  if (p.imageUrl != null && (typeof p.imageUrl !== 'string' || !/^https:\/\//.test(p.imageUrl))) {
     throw new HttpsError('invalid-argument', 'imageUrl must be an https:// URL.');
+  }
+  
   }
   if (p.deepLink !== undefined && typeof p.deepLink !== 'string') {
     throw new HttpsError('invalid-argument', 'deepLink must be a string.');

@@ -46,11 +46,15 @@ export default function NotificationsAdmin() {
   };
 
   const validate = (): string | null => {
-    if (!title.trim()) return 'Title is required.';
-    if (!body.trim()) return 'Message is required.';
+    const cleanTitle = title.trim();
+    const cleanBody = body.trim();
+    const cleanImageUrl = imageUrl.trim();
+
+    if (!cleanTitle) return 'Title is required.';
+    if (!cleanBody) return 'Message is required.';
     
-    // Add .trim() here so an empty input containing only spaces is correctly ignored
-    if (imageUrl.trim() && !/^https:\/\//.test(imageUrl.trim())) {
+    // Safely handles empty strings, hidden whitespaces, or browser auto-fill bugs
+    if (cleanImageUrl && !/^https:\/\//.test(cleanImageUrl)) {
       return 'Image URL must start with https://.';
     }
     
@@ -71,13 +75,13 @@ export default function NotificationsAdmin() {
     setSending(true);
     setResult(null);
     try {
-      const payload = {
-        title: title.trim(),
-        body: body.trim(),
-        imageUrl: imageUrl.trim() || undefined,
-        deepLink: deepLink.trim() || '/',
-        type,
-      };
+     const payload = {
+  title: title.trim(),
+  body: body.trim(),
+  ...(imageUrl.trim() ? { imageUrl: imageUrl.trim() } : {}),
+  deepLink: deepLink.trim() || '/',
+  type,
+};
       const target = buildTarget();
 
       if (scheduleAt) {
