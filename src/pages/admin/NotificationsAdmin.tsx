@@ -48,7 +48,12 @@ export default function NotificationsAdmin() {
   const validate = (): string | null => {
     if (!title.trim()) return 'Title is required.';
     if (!body.trim()) return 'Message is required.';
-    if (imageUrl && !/^https:\/\//.test(imageUrl)) return 'Image URL must start with https://.';
+    
+    // Add .trim() here so an empty input containing only spaces is correctly ignored
+    if (imageUrl.trim() && !/^https:\/\//.test(imageUrl.trim())) {
+      return 'Image URL must start with https://.';
+    }
+    
     if (targetMode === 'user' && !targetUid.trim()) return 'User ID is required.';
     if (targetMode === 'segment' && (!segmentField.trim() || !segmentValue.trim())) return 'Segment field and value are required.';
     return null;
