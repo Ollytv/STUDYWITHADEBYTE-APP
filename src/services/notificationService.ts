@@ -294,6 +294,64 @@ export function getPermissionState(): NotificationPermission {
   return Notification.permission;
 }
 
+// ── System notification display (foreground-safe) ───────────────────────────
+
+// Declared locally rather than relying on lib.dom.d.ts's NotificationOptions —
+// `renotify` and `vibrate` are real, widely-supported browser APIs but are
+// inconsistently present across TypeScript's bundled DOM type versions.
+// Cast to NotificationOptions only at the actual browser API call below.
+interface SystemNotificationOptions {
+  body?: string;
+  icon?: string;
+  badge?: string;
+  image?: string;
+  tag?: string;
+  renotify?: boolean;
+  silent?: boolean;
+  requireInteraction?: boolean; // web equivalent of Android importance: HIGH — stays until dismissed
+  vibrate?: number | number[];
+  data?: unknown;
+}
+
+// Cached once at module load (not re-awaited per call) so showSystemNotification
+// never blocks on a serviceWorker.ready lookup — the registration is almost
+// always already resolved by the time a push arrives, but re-awaiting it on
+// every message adds a needless microtask hop between "FCM delivered" and
+// "banner painted".
+const swRegistrationPromise: Promise<ServiceWorkerRegistration | undefined> =
+  'serviceWorker' in navigator
+    ? navigator.serviceWorker.ready.catch(() => undefined)
+    : Promise.resolve(undefined);
+
+async function getSWRegistration(): Promise<ServiceWorkerRegistration | undefined> {
+  return swRegistrationPromise;
+}
+
+/**
+ * Forces an OS-level notification banner regardless of tab focus/visibility.
+ * Always routes through the Service Worker registration rather than the
+ * `Notification` constructor — Android Chrome (and most mobile PWA runtimes)
+ * disable `new Notification()` entirely and throw when a SW is registered;
+ * `registration.showNotification()` is the only path that works reliably
+ * across desktop and mobile while the app is open and in focus.
+ */
+async function showSystemNotification(
+  title: string,
+  options: SystemNotificationOptions
+): Promise<void> {
+  if (getPermissionState() !== 'granted') return;
+
+  const registration = await getSWRegistration();
+  if (registration) {
+    await registration.showNotification(title, options as NotificationOptions).catch(err =>
+      console.warn('[Notifications] showNotification failed:', err)
+    );
+  } else {
+    // Fallback only for the rare case of no active SW (e.g. desktop Safari).
+    new Notification(title, options as NotificationOptions);
+  }
+}
+
 // ── Foreground FCM message handler ──────────────────────────────────────────
 
 /**
@@ -317,17 +375,21 @@ export async function listenForForegroundMessages(): Promise<() => void> {
       })
     );
 
-    // Foreground pushes don't auto-show an OS notification, so surface one
-    // manually when the tab isn't focused/visible.
-    if (document.visibilityState !== 'visible' && Notification.permission === 'granted') {
-      new Notification(title, {
-        body,
-        icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-72x72.png',
-        tag: data?.notificationId,
-        data: { deepLink: data?.deepLink },
-      });
-    }
+    // FCM never auto-shows an OS banner while this tab is foregrounded —
+    // visible or not. We always force one manually here so the drop-down
+    // banner still appears even while the user is actively using the app.
+    // Background/terminated delivery is handled separately by
+    // firebase-messaging-sw.js and is unaffected by this.
+    showSystemNotification(title, {
+      body,
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-72x72.png',
+      tag: data?.notificationId ?? `push-${Date.now()}`,
+      renotify: true,
+      requireInteraction: true, // heads-up banner stays until the user dismisses it
+      vibrate: [200, 100, 200],
+      data: { deepLink: data?.deepLink },
+    });
   });
 
   return unsubscribe;
@@ -419,19 +481,19 @@ export function scheduleNotifications(
           new CustomEvent<ClassAlertPayload>(NOTIFICATION_EVENT, { detail: payload })
         );
 
-        if (Notification.permission === 'granted') {
-          const title = leadMins === 0
-            ? `🔔 ${cls.courseName} is starting now!`
-            : `⏰ ${cls.courseName} in ${leadMins} minute${leadMins > 1 ? 's' : ''}`;
+        const title = leadMins === 0
+          ? `🔔 ${cls.courseName} is starting now!`
+          : `⏰ ${cls.courseName} in ${leadMins} minute${leadMins > 1 ? 's' : ''}`;
 
-          new Notification(title, {
-            body: `${cls.courseCode}  •  ${cls.venue}  •  ${cls.startTime}`,
-            icon: '/icons/icon-192x192.png',
-            badge: '/icons/icon-72x72.png',
-            tag: dedupKey,
-            silent: false,
-          });
-        }
+        showSystemNotification(title, {
+          body: `${cls.courseCode}  •  ${cls.venue}  •  ${cls.startTime}`,
+          icon: '/icons/icon-192x192.png',
+          badge: '/icons/icon-72x72.png',
+          tag: dedupKey,
+          renotify: true,
+          vibrate: [200, 100, 200],
+          silent: false,
+        });
 
         if (settings.sound) playAlertSound();
 

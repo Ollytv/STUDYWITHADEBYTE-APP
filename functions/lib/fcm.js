@@ -114,9 +114,6 @@ async function writeInboxEntries(uids, payload) {
     return notificationIdByUid;
 }
 // ── Batched send with retry ──────────────────────────────────────────────────
-// `owners[i]` is the uid that sent `messages[i]` — kept as a parallel array
-// (rather than a property on Message) so the object literals stay structurally
-// valid admin.messaging.Message values.
 async function sendBatchWithRetry(messages, owners) {
     let successCount = 0;
     const invalid = [];
@@ -155,12 +152,6 @@ async function sendBatchWithRetry(messages, owners) {
     return { successCount, failureCount: messages.length - successCount, invalid };
 }
 // ── Public entry point ────────────────────────────────────────────────────────
-/**
- * Resolves the target audience, fans the notification out to each user's
- * inbox (Notification Center), sends push messages in FCM-legal batches with
- * retry, deletes tokens FCM reports as invalid/unregistered, and logs a
- * summary to notificationLogs/{logId}.
- */
 async function dispatchNotification(target, payload, triggeredBy, campaignId) {
     const devices = await resolveDevices(target);
     if (devices.length === 0) {
@@ -188,7 +179,33 @@ async function dispatchNotification(target, payload, triggeredBy, campaignId) {
                 deepLink: payload.deepLink ?? '/',
                 type: payload.type ?? 'general',
             },
+            // ── SYSTEM COMPLIANT MAXIMUM URGENCY DELIVERY CONFIG ──
+            android: {
+                priority: 'high', // Tells Google FCM to wake up the device instantly
+                notification: {
+                    channelId: 'studibyte_alerts', // MUST match the channel ID Claude created on your frontend!
+                    sound: 'default',
+                    visibility: 'public',
+                },
+            },
+            apns: {
+                headers: {
+                    'apns-priority': '10', // Triggers immediate screen wake-up and banner on iOS
+                },
+                payload: {
+                    aps: {
+                        alert: {
+                            title: payload.title,
+                            body: payload.body,
+                        },
+                        sound: 'default',
+                    },
+                },
+            },
             webpush: {
+                headers: {
+                    Urgency: 'high',
+                },
                 fcmOptions: { link: payload.deepLink ?? '/' },
             },
         });
@@ -216,9 +233,16 @@ async function dispatchNotification(target, payload, triggeredBy, campaignId) {
 }
 async function logResult(target, payload, triggeredBy, campaignId, result) {
     console.log('[fcm] Dispatch complete', { target, triggeredBy, campaignId, ...result });
+    const sanitizedPayload = {
+        title: payload.title,
+        body: payload.body,
+        imageUrl: payload.imageUrl ?? null,
+        deepLink: payload.deepLink ?? '/',
+        type: payload.type ?? 'general',
+    };
     await admin_1.db.collection('notificationLogs').add({
         target,
-        payload,
+        payload: sanitizedPayload,
         triggeredBy,
         campaignId: campaignId ?? null,
         ...result,
