@@ -2,14 +2,15 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import path from 'path';
+
+
 
 export default defineConfig(({ mode }) => {
   // Load env vars so we can validate them at build time and inject into SW
   const env = loadEnv(mode, process.cwd(), '');
 
   // ── Build-time env var validation ─────────────────────────────────────────
-  // Fail the build immediately if any required Firebase variable is missing.
-  // This prevents deploying a broken app that silently fails to connect.
   const REQUIRED = [
     'VITE_FIREBASE_API_KEY',
     'VITE_FIREBASE_AUTH_DOMAIN',
@@ -33,10 +34,7 @@ export default defineConfig(({ mode }) => {
 
       VitePWA({
         registerType: 'autoUpdate',
-
-        // Assets to precache — the SW will serve these offline
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
-
         manifest: {
           name:             'StudyWithAdebyte',
           short_name:       'StudiByte',
@@ -68,21 +66,14 @@ export default defineConfig(({ mode }) => {
             },
           ],
         },
-
         workbox: {
-          // Precache all built assets
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-
-          // Never let Workbox intercept Firebase API calls — they must always
-          // go to the network so auth tokens and Firestore writes are live.
           navigateFallbackDenylist: [
             /^\/api\//,
             /firebaseio\.com/,
             /googleapis\.com/,
           ],
-
           runtimeCaching: [
-            // Cache Google Fonts for 1 year (they are versioned by Google)
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
               handler:    'CacheFirst',
@@ -94,7 +85,6 @@ export default defineConfig(({ mode }) => {
                 },
               },
             },
-            // Cache font files themselves for 1 year
             {
               urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
               handler:    'CacheFirst',
@@ -106,8 +96,6 @@ export default defineConfig(({ mode }) => {
                 },
               },
             },
-            // Firebase Storage downloads — NetworkFirst so users always get
-            // the latest file, with a cache fallback when offline
             {
               urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*/i,
               handler:    'NetworkFirst',
@@ -115,7 +103,7 @@ export default defineConfig(({ mode }) => {
                 cacheName: 'firebase-storage-cache',
                 expiration: {
                   maxEntries:    50,
-                  maxAgeSeconds: 60 * 60 * 24 * 7, // 1 week
+                  maxAgeSeconds: 60 * 60 * 24 * 7,
                 },
                 networkTimeoutSeconds: 10,
               },
@@ -125,43 +113,30 @@ export default defineConfig(({ mode }) => {
       }),
     ],
 
-    // ── Build optimisation ──────────────────────────────────────────────────
     build: {
-      // Target modern browsers — smaller bundles, native ES modules
       target: 'es2020',
-
-      // Warn when any chunk exceeds 500KB (helps catch accidental large imports)
       chunkSizeWarningLimit: 500,
-
       rollupOptions: {
         output: {
-          // Manual chunk splitting — separates large dependencies into their own
-          // files so the browser can cache them independently of app code changes.
-        manualChunks(id) {
-  if (id.includes('react')) {
-    return 'vendor-react';
-  }
-
-  if (id.includes('firebase')) {
-    return 'vendor-firebase';
-  }
-
-  if (id.includes('framer-motion')) {
-    return 'vendor-motion';
-  }
-
-  if (id.includes('zustand')) {
-    return 'vendor-zustand';
-  }
-}
+          manualChunks(id) {
+            if (id.includes('react')) {
+              return 'vendor-react';
+            }
+            if (id.includes('firebase')) {
+              return 'vendor-firebase';
+            }
+            if (id.includes('framer-motion')) {
+              return 'vendor-motion';
+            }
+            if (id.includes('zustand')) {
+              return 'vendor-zustand';
+            }
+          }
         },
       },
     },
 
-    // ── Dependency pre-bundling ─────────────────────────────────────────────
     optimizeDeps: {
-      // pdfjs-dist uses dynamic imports internally — exclude from pre-bundling
-      // to avoid Vite's CommonJS transform breaking its worker loading
       exclude: ['pdfjs-dist'],
     },
   };

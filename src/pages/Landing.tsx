@@ -1,11 +1,13 @@
 // src/pages/Landing.tsx
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Brain, BookOpen, TrendingUp, FileText, Search, Bell,
   Cloud, Smartphone, CheckCircle, ChevronDown, ChevronRight,
   Sparkles, Star, Shield, Zap, Users, Award, ArrowRight,
   ClipboardList, Timer, Download, Monitor, Apple, Lock,
+  RefreshCw, Target, Calendar, Clock, AlertCircle,
 } from 'lucide-react';
 
 // ── Animation variants ────────────────────────────────────────────────────────
@@ -186,31 +188,39 @@ export default function Landing({ onGetStarted }: { onGetStarted: () => void }) 
     <div className="min-h-screen bg-dark-950 overflow-x-hidden">
 
       {/* ── NAV ─────────────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5"
-        style={{
-          background: 'rgba(5,8,10,0.85)',
-          backdropFilter: 'blur(16px)',
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
-          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
-          paddingBottom: '12px',
-        }}>
-        <div className="flex items-center gap-2">
+      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-5 py-3"
+        style={{ background: 'rgba(5,8,10,0.88)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        <Link to="/" className="flex items-center gap-2 touch-manipulation flex-shrink-0">
           <div className="w-7 h-7 rounded-lg bg-green-500 flex items-center justify-center">
             <Sparkles size={13} className="text-dark-950" />
           </div>
           <span className="text-sm font-black text-white font-display tracking-tight">StudiByte</span>
+        </Link>
+        {/* Desktop nav links — hidden on mobile to avoid overflow */}
+        <div className="hidden sm:flex items-center gap-5 flex-1 justify-center">
+          {[
+            { label: 'Features', to: '/features' },
+            { label: 'Guides',   to: '/guides'   },
+            { label: 'About',    to: '/about'    },
+            { label: 'FAQ',      to: '/faq'      },
+            { label: 'Support',  to: '/support'  },
+          ].map(l => (
+            <Link key={l.to} to={l.to}
+              className="text-xs font-semibold text-dark-400 hover:text-white transition-colors font-body whitespace-nowrap">
+              {l.label}
+            </Link>
+          ))}
         </div>
         <button
           onClick={onGetStarted}
-          className="text-xs font-bold text-dark-950 bg-green-500 px-4 py-2 rounded-xl touch-manipulation active:scale-95 transition-transform"
+          className="text-xs font-bold text-dark-950 bg-green-500 px-4 py-2 rounded-xl touch-manipulation active:scale-95 transition-transform flex-shrink-0"
         >
           Get Started
         </button>
       </nav>
 
       {/* ── HERO ────────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col justify-center px-5 pb-16 max-w-2xl mx-auto overflow-hidden"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 96px)' }}>
+      <section className="relative min-h-screen flex flex-col justify-center px-5 pt-24 pb-16 max-w-2xl mx-auto overflow-hidden">
         {/* Background glow */}
         <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full opacity-10 pointer-events-none"
           style={{ background: 'radial-gradient(circle, #22c55e, transparent 70%)' }} />
@@ -653,6 +663,89 @@ export default function Landing({ onGetStarted }: { onGetStarted: () => void }) 
             </motion.div>
           ))}
         </div>
+
+        {/* Author / creator credential block — hardcoded for E-E-A-T signal, not fetched */}
+        <motion.div
+          className="mt-5 p-5 rounded-2xl bg-dark-900/50 border border-white/6"
+          initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          itemScope
+          itemType="https://schema.org/Person"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-green-500/15 border border-green-500/25 flex items-center justify-center flex-shrink-0">
+              <Users size={16} className="text-green-400" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-white font-display" itemProp="name">[Author Full Name]</p>
+              <p className="text-xs text-dark-500 font-body" itemProp="jobTitle">
+                [Credential — e.g. B.Sc. Computer Science · Founder &amp; Developer, StudiByte]
+              </p>
+            </div>
+          </div>
+          <p className="text-xs text-dark-400 font-body leading-relaxed">
+            StudiByte is designed, built, and maintained directly by its founder — not a large team optimising for
+            engagement metrics. Every feature on this page exists because of a real problem encountered as a student,
+            and every claim reflects how the app actually works today, not a roadmap promise.
+          </p>
+          <p className="text-[10px] text-dark-600 font-body mt-3">
+            Page last reviewed <time dateTime="2026-07-01">July 2026</time> ·{' '}
+            <Link to="/about" className="text-green-500 hover:underline">
+              Read the full story →
+            </Link>
+          </p>
+        </motion.div>
+      </Section>
+
+      {/* ── STUDY GUIDES TEASER ──────────────────────────────────────────── */}
+      <Section id="guides-teaser">
+        <SectionLabel>Free Study Guides</SectionLabel>
+        <motion.h2 className="text-2xl font-black text-white font-display mb-2" style={{ letterSpacing: '-0.8px' }}
+          variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+          Real study techniques, not just app features.
+        </motion.h2>
+        <motion.p className="text-sm text-dark-400 font-body mb-6 leading-relaxed"
+          variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} custom={1}>
+          Beyond the app itself, we publish in-depth, original guides on studying and coursework — written to
+          genuinely help, whether or not you ever install StudiByte.
+        </motion.p>
+        <div className="space-y-3">
+          {[
+            {
+              to: '/guides/active-recall-for-coding',
+              title: 'Active Recall for Coding',
+              desc: 'Why rereading your notes fails, and the weekly retrieval system that actually works for programming modules.',
+            },
+            {
+              to: '/guides/python-loops-made-easy',
+              title: 'Python Loops Made Easy',
+              desc: 'A plain-language breakdown of for-loops and while-loops, with the mistakes that trip up most first-year students.',
+            },
+            {
+              to: '/guides/how-to-calculate-cgpa-nigeria',
+              title: 'How to Calculate CGPA in Nigeria',
+              desc: 'A worked walkthrough of the 3.0, 4.0, and 5.0 grading scales used across Nigerian universities and polytechnics.',
+            },
+          ].map((g, i) => (
+            <motion.div key={g.to}
+              initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }} transition={{ delay: i * 0.06 }}>
+              <Link
+                to={g.to}
+                className="block p-4 rounded-2xl bg-dark-900/50 border border-white/5 hover:border-green-500/30 transition-colors touch-manipulation"
+              >
+                <p className="text-sm font-bold text-white font-display mb-1">{g.title}</p>
+                <p className="text-xs text-dark-400 font-body leading-relaxed">{g.desc}</p>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+        <Link
+          to="/guides"
+          className="inline-flex items-center gap-1.5 mt-4 text-xs font-semibold text-green-400 hover:text-green-300 transition-colors touch-manipulation"
+        >
+          View all guides <ChevronRight size={13} />
+        </Link>
       </Section>
 
       {/* ── FAQ ──────────────────────────────────────────────────────────── */}
@@ -700,28 +793,41 @@ export default function Landing({ onGetStarted }: { onGetStarted: () => void }) 
       </section>
 
       {/* ── FOOTER ───────────────────────────────────────────────────────── */}
-      <footer className="px-5 py-8 max-w-2xl mx-auto border-t border-white/5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-green-500 flex items-center justify-center">
-              <Sparkles size={11} className="text-dark-950" />
+      <footer className="px-5 pt-8 pb-10 max-w-2xl mx-auto border-t border-white/5">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 rounded-lg bg-green-500 flex items-center justify-center flex-shrink-0">
+                <Sparkles size={11} className="text-dark-950" />
+              </div>
+              <span className="text-xs font-black text-white font-display">StudiByte</span>
             </div>
-            <span className="text-xs font-black text-white font-display">StudiByte</span>
+            <p className="text-[10px] text-dark-600 font-body leading-relaxed max-w-[200px]">
+              AI-powered academic platform for university and college students.
+            </p>
           </div>
-          <p className="text-[10px] text-dark-600 font-body">© {new Date().getFullYear()} StudiByte. All rights reserved.</p>
+          {/* Footer links — two columns on wider screens, wrapping on mobile */}
+          <div className="flex flex-wrap gap-x-5 gap-y-1 justify-end flex-shrink-0">
+            {[
+              { label: 'Features', to: '/features' },
+              { label: 'Guides',   to: '/guides'   },
+              { label: 'About',    to: '/about'    },
+              { label: 'FAQ',      to: '/faq'      },
+              { label: 'Support',  to: '/support'  },
+              { label: 'Contact',  to: '/contact'  },
+              { label: 'Privacy',  to: '/privacy'  },
+              { label: 'Terms',    to: '/terms'    },
+            ].map(l => (
+              <Link key={l.to} to={l.to}
+                className="text-[10px] text-dark-500 hover:text-dark-300 transition-colors font-body whitespace-nowrap">
+                {l.label}
+              </Link>
+            ))}
+          </div>
         </div>
-        <p className="text-[10px] text-dark-600 font-body leading-relaxed mt-4 max-w-md">
-          StudiByte is an AI-powered academic platform built to help students stay organised, track their CGPA accurately, and study more effectively — bringing timetables, assignments, course materials, and an AI study assistant together in one place, with the mission of helping every student improve their academic performance without juggling five different apps.
+        <p className="text-[10px] text-dark-600 font-body">
+          © {new Date().getFullYear()} StudiByte. All rights reserved.
         </p>
-        <div className="flex gap-4 mt-4">
-          {['Features', 'AI Assistant', 'Install', 'About', 'FAQ'].map(link => (
-            <button key={link}
-              onClick={() => document.getElementById(link.toLowerCase().replace(' ', ''))?.scrollIntoView({ behavior: 'smooth' })}
-              className="text-[10px] text-dark-500 hover:text-dark-300 transition-colors font-body">
-              {link}
-            </button>
-          ))}
-        </div>
       </footer>
 
       {/* ── SCROLL TO BOTTOM BUTTON ──────────────────────────────────────── */}

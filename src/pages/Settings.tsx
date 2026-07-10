@@ -14,6 +14,8 @@ import { Button } from '../components/ui/Button';
 import { requestNotificationPermission } from '../services/notifications';
 import { exportAllData, clearAllData } from '../services/db';
 import { StudentProfile, ProgramLevel, Semester, PROGRAM_LEVEL_META, DEFAULT_PROGRAM_LEVEL, CGPA_SCALE_OPTIONS, DEFAULT_CGPA_SCALE, CgpaScale } from '../types';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../routes';
 
 const DEPARTMENTS = [
   'Computer Science','Business Administration','Accountancy',
@@ -295,8 +297,11 @@ function ContactForm() {
 // ══════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ══════════════════════════════════════════════════════════════════════════════
-export default function Settings() {
-  const { settings, updateSettings, profile, saveProfile, signOut } = useStore();
+function Settings() {
+  const navigate = useNavigate();
+  const { settings, updateSettings, profile, saveProfile, signOut, activeSemester, activeAcademicYear } = useStore();
+
+  // ... (Keep all your useState, handlers, and return statement code exactly the same here)
 
   // Modals
   const [modal, setModal] = useState<'privacy'|'terms'|'about'|'contact'|'faq'|'disclaimer'|null>(null);
@@ -958,3 +963,5 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
     </div>
   );
 }
+
+export default Settings;
