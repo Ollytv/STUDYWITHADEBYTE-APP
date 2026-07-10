@@ -56,6 +56,11 @@ export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : nul
 // private browsing, and some older WebViews. Exporting a promise lets callers
 // gracefully skip notification features when unsupported.
 export const messagingPromise = (async () => {
+  // Extra guard: some environments (headless/prerender) leave
+  // `'serviceWorker' in navigator` true while the value itself is
+  // undefined, which fools isSupported()'s `in` check. Bail out early
+  // if the API isn't actually usable.
+  if (typeof navigator === 'undefined' || !navigator.serviceWorker) return null;
   try {
     const supported = await isSupported();
     if (!supported) return null;
