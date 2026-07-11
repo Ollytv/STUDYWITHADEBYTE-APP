@@ -62,7 +62,8 @@ export default function Attendance() {
   return (
     <div className="min-h-screen bg-dark-950 pb-28">
 
-      {/* ── HEADER ──────────────────────────────────────────────────────── */}
+      {/* ── STICKY HEADER ────────────────────────────────────────────────── */}
+      <div className="sticky top-0 z-30 backdrop-blur-2xl" style={{ background: 'rgba(10,10,15,0.92)' }}>
       <div className="relative overflow-hidden">
         <div className="absolute inset-0" style={{ background: 'linear-gradient(160deg, rgba(34,197,94,0.12) 0%, rgba(5,150,105,0.06) 40%, transparent 70%)' }} />
         <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full" style={{ background: 'radial-gradient(circle, rgba(34,197,94,0.1) 0%, transparent 70%)' }} />
@@ -82,6 +83,7 @@ export default function Attendance() {
       </div>
 
       <SemesterSwitcher />
+      </div>
 
       {/* ── SUMMARY HERO ────────────────────────────────────────────────── */}
       <motion.div className="mx-5 mb-5 rounded-2xl overflow-hidden relative"

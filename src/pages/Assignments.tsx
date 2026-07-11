@@ -95,6 +95,8 @@ const handleSave = async () => {
 
   return (
     <div className="min-h-screen bg-dark-950 pb-24">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-30 backdrop-blur-2xl" style={{ background: 'rgba(10,10,15,0.92)' }}>
       <div className="px-4 pt-14 pb-4">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-3">
@@ -134,6 +136,7 @@ const handleSave = async () => {
             <span className={filter === id ? 'text-green-500' : 'text-dark-600'}>({counts[id]})</span>
           </button>
         ))}
+      </div>
       </div>
 
       {/* List */}

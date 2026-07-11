@@ -4,7 +4,8 @@ service firebase.storage {
 
     // ── Avatar uploads ─────────────────────────────────────────────────────
     // Owner-only read/write. Max 5MB. Images only.
-    match /avatars/{userId}/{fileName} {
+    // Path matches storage.ts: users/{userId}/profile.jpg
+    match /users/{userId}/profile.jpg {
       allow read:  if request.auth != null
                    && request.auth.uid == userId;
 
@@ -20,7 +21,8 @@ service firebase.storage {
     // ── Course materials ───────────────────────────────────────────────────
     // Owner-only read/write. Max 20MB.
     // MIME allowlist: PDF and images only. No executables, scripts, or archives.
-    match /materials/{userId}/{materialId} {
+    // Path matches storage.ts: users/{userId}/materials/{materialId}_{fileName}
+    match /users/{userId}/materials/{materialId} {
       allow read:  if request.auth != null
                    && request.auth.uid == userId;
 

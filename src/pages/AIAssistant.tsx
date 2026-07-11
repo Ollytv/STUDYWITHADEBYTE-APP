@@ -393,7 +393,7 @@ export default function AIAssistant() {
   const isEmpty  = messages.length === 0;
 
   return (
-    <div className="flex flex-col min-h-screen bg-dark-950 relative">
+    <div className="flex flex-col h-screen bg-dark-950 relative overflow-hidden">
 
       {/* ── INLINE STYLES for markdown ──────────────────────────────────── */}
       <style>{`

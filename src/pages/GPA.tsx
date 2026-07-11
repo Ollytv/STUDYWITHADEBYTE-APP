@@ -126,7 +126,8 @@ export default function GPA() {
   return (
     <div className="min-h-screen bg-dark-950 pb-24">
 
-      {/* Header */}
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-30 backdrop-blur-2xl" style={{ background: 'rgba(10,10,15,0.92)' }}>
       <div className="px-4 pt-14 pb-4">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-3">
@@ -153,6 +154,7 @@ export default function GPA() {
       </div>
 
       <SemesterSwitcher />
+      </div>
 
       {/* GPA Summary */}
       <div className="px-4 mb-5">

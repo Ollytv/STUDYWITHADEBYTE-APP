@@ -299,11 +299,42 @@ export async function loadConversations(): Promise<ChatConversation[]> {
   }
 }
 
+/**
+ * Recursively removes `undefined` values from an object/array tree.
+ * Firestore's setDoc()/updateDoc() reject any `undefined` field, including
+ * ones nested inside arrays or sub-objects (e.g. a message inside
+ * conv.messages). This is a defensive safety net so a future optional
+ * field added to ChatConversation/ChatMessage can't silently reintroduce
+ * this class of bug.
+ */
+function stripUndefinedDeep<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map(stripUndefinedDeep) as unknown as T;
+  }
+  // Only recurse into plain objects ({ ... } literals). Firestore sentinels
+  // (serverTimestamp(), Timestamp instances, GeoPoint, etc.) are class
+  // instances with their own prototype — recursing into them would strip
+  // their internal fields and break them. Leave anything non-plain alone.
+  const isPlainObject =
+    value !== null &&
+    typeof value === 'object' &&
+    (value as object).constructor === Object;
+
+  if (isPlainObject) {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .filter(([, v]) => v !== undefined)
+        .map(([k, v]) => [k, stripUndefinedDeep(v)]),
+    ) as T;
+  }
+  return value;
+}
+
 export async function saveConversation(conv: ChatConversation): Promise<void> {
   try {
     await setDoc(
       doc(convCollection(), conv.id),
-      { ...conv, updatedAt: serverTimestamp() },
+      stripUndefinedDeep({ ...conv, updatedAt: serverTimestamp() }),
       { merge: true },
     );
   } catch (err) {
@@ -365,7 +396,10 @@ export function makeAssistantMessage(
     role:      'assistant',
     content:   text,
     createdAt: new Date().toISOString(),
-    streaming: opts?.streaming,
-    error:     opts?.error,
+    // Only include these keys when explicitly true — Firestore's setDoc()
+    // rejects `undefined` anywhere in the document tree (including inside
+    // arrays), so we must not store the literal `undefined` here.
+    ...(opts?.streaming ? { streaming: true } : {}),
+    ...(opts?.error ? { error: true } : {}),
   };
 }

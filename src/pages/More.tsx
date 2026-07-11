@@ -96,7 +96,8 @@ export default function More() {
   return (
     <div className="min-h-screen bg-dark-950 pb-28">
 
-      {/* ── HEADER ──────────────────────────────────────────────────────── */}
+      {/* ── STICKY HEADER ───────────────────────────────────────────────── */}
+      <div className="sticky top-0 z-30 backdrop-blur-2xl" style={{ background: 'rgba(10,10,15,0.92)' }}>
       <div className="relative overflow-hidden">
         <div className="absolute inset-0"
           style={{ background: 'linear-gradient(160deg, rgba(192,132,252,0.1) 0%, rgba(34,211,238,0.05) 50%, transparent 80%)' }}
@@ -124,6 +125,7 @@ export default function More() {
             Productivity tools for All students.
           </motion.p>
         </div>
+      </div>
       </div>
 
       {/* ── GPA HERO CARD (if data exists) ──────────────────────────────── */}

@@ -7,7 +7,8 @@ import {
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useStore } from '../hooks/useStore';
 import { CourseMaterial } from '../types';
-import { saveMaterialToIDB, getStorageWarning, getStorageUsage } from '../services/materialStorage';
+import { getStorageWarning, getStorageUsage } from '../services/materialStorage';
+import { uploadCourseMaterial, StorageUploadError } from '../services/storage';
 import { Modal } from '../components/ui/Modal';
 import { Input, Select, TextArea } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -83,7 +84,7 @@ function PreviewModal({ material, onClose }: { material: CourseMaterial; onClose
 
 // ── Main component ─────────────────────────────────────────────────────────
 export default function Materials() {
-  const { materials, addMaterial, deleteMaterial, activeSemester, activeAcademicYear, classes } = useStore();
+  const { materials, addMaterial, deleteMaterial, activeSemester, activeAcademicYear, classes, currentUser } = useStore();
   const navigate = useNavigate();
 
   const [showAdd, setShowAdd]           = useState(false);
@@ -234,37 +235,38 @@ export default function Materials() {
       const linkedClass = classes.find(c => c.courseCode === form.courseCode);
       const id = generateId();
 
+      // For file types (pdf/image), upload the real File to Firebase Storage
+      // and use the download URL as `content`. Text/link types keep using
+      // the typed content directly — nothing to upload.
+      let uploadedContent = form.content.trim();
+      if (isFileType) {
+        if (!currentUser) throw new Error('You must be signed in to upload a material.');
+        if (!selectedFile) throw new Error('Please select a file to upload.');
+
+        const { url } = await uploadCourseMaterial(
+          currentUser.uid,
+          id,
+          selectedFile,
+          (percent) => setUploadProgress(percent)
+        );
+        uploadedContent = url;
+      }
+
       const material: CourseMaterial = {
         id,
         name:         form.name.trim(),
         courseCode:   form.courseCode,
         courseName:   linkedClass?.courseName || form.courseName,
         type:         form.type,
-        // For file types: pass the data URL — materialStorage.ts converts to ArrayBuffer
-        // For text/link: use content directly
-        content:      isFileType ? fileDataUrl : form.content.trim(),
+        content:      uploadedContent,
         size:         selectedFile?.size,
         semester:     activeSemester,
         academicYear: activeAcademicYear,
         createdAt:    new Date().toISOString(),
       };
 
-      // Show progress animation — IDB writes are fast but give user feedback
-      setUploadProgress(30);
-      const savedMeta = await saveMaterialToIDB(material);
-      setUploadProgress(90);
-
-      // Reconstruct the material with a fresh blob: URL for immediate display.
-      // For file types, re-use the data URL we already have in memory as the
-      // content for this session — getMaterialsFromIDB() will create a proper
-      // blob: URL on next reload. For text/link, content is already correct.
-      const displayMaterial: CourseMaterial = {
-        ...material,
-        size: savedMeta.size, // use the byte-accurate size from IDB
-      };
-
       // Optimistically add to store so the list updates immediately
-      addMaterial(displayMaterial);
+      addMaterial(material);
 
       setUploadProgress(100);
       setUploadStatus('done');
@@ -281,7 +283,9 @@ export default function Materials() {
       console.error('saveMaterial error:', e);
       setUploadStatus('error');
       setUploadError(
-        e?.message?.includes('too large')
+        e instanceof StorageUploadError
+          ? e.message
+          : e?.message?.includes('too large')
           ? e.message
           : e?.message?.includes('Storage limit')
           ? e.message
@@ -320,7 +324,8 @@ export default function Materials() {
   return (
     <>
       <div className="min-h-screen bg-dark-950 pb-24">
-        {/* Header */}
+        {/* Sticky Header */}
+        <div className="sticky top-0 z-30 backdrop-blur-2xl" style={{ background: 'rgba(10,10,15,0.92)' }}>
         <div className="px-4 pt-14 pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -347,14 +352,6 @@ export default function Materials() {
         </div>
 
         <SemesterSwitcher />
-
-        {/* Storage warning banner */}
-        {storageWarning && (
-          <div className="mx-4 mb-3 p-3 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-start gap-2">
-            <HardDrive size={14} className="text-yellow-400 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-yellow-400 font-body">{storageWarning}</p>
-          </div>
-        )}
 
         {/* Search */}
         <div className="px-4 mb-3">
@@ -392,6 +389,15 @@ export default function Materials() {
             {courseOptions.map(o => <option key={o.value} value={o.value} className="bg-dark-800">{o.label}</option>)}
           </select>
         </div>
+        </div>
+
+        {/* Storage warning banner */}
+        {storageWarning && (
+          <div className="mx-4 mb-3 p-3 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-start gap-2">
+            <HardDrive size={14} className="text-yellow-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-yellow-400 font-body">{storageWarning}</p>
+          </div>
+        )}
 
         {/* List */}
         <div className="px-4 space-y-2.5">

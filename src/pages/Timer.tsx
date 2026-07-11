@@ -93,6 +93,8 @@ export default function Timer() {
 
   return (
     <div className="min-h-screen bg-dark-950 pb-24">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-30 backdrop-blur-2xl" style={{ background: 'rgba(10,10,15,0.92)' }}>
       <div className="px-4 pt-14 pb-6">
         <div className="flex items-center gap-3 mb-1">
           <button
@@ -106,6 +108,7 @@ export default function Timer() {
             <p className="text-xs text-dark-400 font-body">Pomodoro technique for focused studying</p>
           </div>
         </div>
+      </div>
       </div>
 
       {/* Mode indicator */}

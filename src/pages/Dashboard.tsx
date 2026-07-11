@@ -96,7 +96,8 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-dark-950 pb-28">
 
-      {/* ── HERO HEADER ─────────────────────────────────────────────────── */}
+      {/* ── STICKY HERO HEADER ──────────────────────────────────────────── */}
+      <div className="sticky top-0 z-30 backdrop-blur-2xl" style={{ background: 'rgba(10,10,15,0.92)' }}>
       <div className="relative overflow-hidden">
         {/* Gradient background */}
         <div className="absolute inset-0"
@@ -194,6 +195,7 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {/* ── MOTIVATION BANNER ────────────────────────────────────────────── */}
