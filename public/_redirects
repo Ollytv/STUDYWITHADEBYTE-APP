@@ -1,0 +1,2 @@
+# Serve static assets if they exist, otherwise fallback to index.html for the SPA
+/*  /index.html  200
