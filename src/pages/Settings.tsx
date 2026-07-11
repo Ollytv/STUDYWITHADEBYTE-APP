@@ -6,14 +6,47 @@ import {
   ChevronDown, ChevronUp, X, MessageSquare, Bug, Send,
   BookOpen, Star, ExternalLink, Database,
 } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { useState, useRef, Component, type ReactNode } from 'react';
+
+// ── Error boundary — catches runtime crashes so the page never goes black ──
+class SettingsErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('[Settings] Render error:', error, info.componentStack);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="min-h-screen bg-dark-950 flex flex-col items-center justify-center px-6 text-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+            <span className="text-2xl">⚠️</span>
+          </div>
+          <p className="text-base font-bold text-white">Settings couldn't load</p>
+          <p className="text-sm text-dark-400 leading-relaxed max-w-xs">
+            {(this.state.error as Error).message || 'An unexpected error occurred.'}
+          </p>
+          <button
+            onClick={() => this.setState({ error: null })}
+            className="px-5 py-2.5 rounded-xl bg-green-500 text-dark-950 text-sm font-bold touch-manipulation"
+          >
+            Try again
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import { useStore } from '../hooks/useStore';
 import { Modal } from '../components/ui/Modal';
 import { Input, Select } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { requestNotificationPermission } from '../services/notifications';
 import { exportAllData, clearAllData } from '../services/db';
-import { uploadProfilePicture, StorageUploadError } from '../services/storage';
 import { StudentProfile, ProgramLevel, Semester, PROGRAM_LEVEL_META, DEFAULT_PROGRAM_LEVEL, CGPA_SCALE_OPTIONS, DEFAULT_CGPA_SCALE, CgpaScale } from '../types';
 
 const DEPARTMENTS = [
@@ -296,8 +329,8 @@ function ContactForm() {
 // ══════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ══════════════════════════════════════════════════════════════════════════════
-export default function Settings() {
-  const { settings, updateSettings, profile, saveProfile, signOut, currentUser } = useStore();
+function SettingsPage() {
+  const { settings, updateSettings, profile, saveProfile, signOut } = useStore();
 
   // Modals
   const [modal, setModal] = useState<'privacy'|'terms'|'about'|'contact'|'faq'|'disclaimer'|null>(null);
@@ -318,9 +351,14 @@ export default function Settings() {
     currentAcademicYear:`${new Date().getFullYear()}/${new Date().getFullYear()+1}`,
     avatar:'',
   });
-  const [notifGranted, setNotifGranted] = useState(Notification.permission === 'granted');
+  // Guard required: iOS Safari does not implement the Notifications API at all.
+  // Accessing `Notification.permission` without this check throws:
+  //   ReferenceError: Can't find variable: Notification
+  // …which crashes the component before rendering a single pixel → black screen.
+  const [notifGranted, setNotifGranted] = useState(
+    typeof Notification !== 'undefined' && Notification.permission === 'granted'
+  );
   const [saving, setSaving] = useState(false);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const avatarRef = useRef<HTMLInputElement>(null);
 
   const setP = (key: keyof StudentProfile, val: string|number) =>
@@ -344,12 +382,11 @@ export default function Settings() {
       alert(`Image is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum size is 5 MB.`);
       return;
     }
-    setAvatarFile(file); // the real File object — used for the actual Storage upload on save
     const reader = new FileReader();
     reader.onload  = e => {
       const result = e.target?.result as string;
       console.info(`[Settings] Avatar selected — ${(file.size / 1024).toFixed(1)} KB, type: ${file.type}`);
-      setP('avatar', result); // base64 preview only — never sent to Storage or Firestore
+      setP('avatar', result);
     };
     reader.onerror = () => {
       console.error('[Settings] FileReader failed to read avatar file.');
@@ -362,14 +399,6 @@ export default function Settings() {
     if (!profileForm.fullName?.trim()) return;
     setSaving(true);
     try {
-      // Upload the new avatar to Storage first (only if the user picked a new
-      // file this session) — everything else keeps the existing avatar URL.
-      let avatarUrl = profile?.avatar || '';
-      if (avatarFile) {
-        if (!currentUser) throw new Error('You must be signed in to upload a profile picture.');
-        avatarUrl = await uploadProfilePicture(currentUser.uid, avatarFile);
-      }
-
       await saveProfile({
         fullName: profileForm.fullName!.trim(),
         department: profileForm.department || '',
@@ -381,23 +410,21 @@ export default function Settings() {
         targetAttendance: profileForm.targetAttendance || 75,
         currentSemester: (profileForm.currentSemester || 'First') as Semester,
         currentAcademicYear: profileForm.currentAcademicYear || `${new Date().getFullYear()}/${new Date().getFullYear()+1}`,
-        avatar: avatarUrl,
+        avatar: profileForm.avatar || '',
       });
       setShowProfile(false);
-      // Clear the base64 preview and picked File — profile.avatar now holds
-      // the real Storage download URL, reflected via the store on next render.
+      // Clear the base64 data URL from form state — the store now holds
+      // the blob: URL reconstructed from IndexedDB by db.getProfile()
       setProfileForm(prev => ({ ...prev, avatar: '' }));
-      setAvatarFile(null);
       console.info('[Settings] Profile saved successfully.');
     } catch (e: any) {
+      // Log full error details for debugging
       console.error('[Settings] Save profile failed:', e);
-      const msg = e instanceof StorageUploadError
-        ? e.message
-        : e?.message || '';
+      const msg = e?.message || '';
       alert(
-        e instanceof StorageUploadError ? msg :
         msg.includes('too large')   ? e.message :
         msg.includes('not allowed') ? e.message :
+        msg.includes('IndexedDB')   ? 'Could not save profile picture. Your browser storage may be full.' :
         `Failed to save profile: ${msg || 'Please try again.'}`
       );
     } finally {
@@ -557,8 +584,7 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
   return (
     <div className="min-h-screen bg-dark-950 pb-36 overflow-x-hidden">
 
-      {/* ── STICKY HEADER ───────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-30 backdrop-blur-2xl" style={{ background: 'rgba(10,10,15,0.92)' }}>
+      {/* ── HEADER ──────────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0" style={{ background: 'linear-gradient(160deg,rgba(168,85,247,0.12) 0%,rgba(139,92,246,0.05) 40%,transparent 70%)' }} />
         <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full" style={{ background: 'radial-gradient(circle,rgba(168,85,247,0.1) 0%,transparent 70%)' }} />
@@ -575,7 +601,6 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
             Preferences, account & legal
           </motion.p>
         </div>
-      </div>
       </div>
 
       <div className="px-5 space-y-4">
@@ -888,21 +913,10 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
           <p className="text-center text-sm text-dark-300 leading-relaxed">
             You'll be signed out and taken to the login screen. Your data stays safe in the cloud.
           </p>
-          <div className="flex flex-row items-stretch gap-3">
-            <button
-              onClick={() => setShowLogoutConfirm(false)}
-              className="flex-1 min-w-0 py-3 rounded-2xl font-bold text-sm whitespace-nowrap touch-manipulation"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#e5e7eb' }}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleLogout}
-              className="flex-1 min-w-0 py-3 rounded-2xl font-bold text-sm whitespace-nowrap touch-manipulation"
-              style={{ background: 'linear-gradient(135deg,#ef4444,#dc2626)', color: '#fff' }}
-            >
-              Log Out
-            </button>
+          <div className="flex gap-3">
+            <Button variant="secondary" fullWidth onClick={() => setShowLogoutConfirm(false)}>Cancel</Button>
+            <button onClick={handleLogout} className="flex-1 py-3 rounded-2xl font-bold text-sm touch-manipulation"
+              style={{ background: 'linear-gradient(135deg,#ef4444,#dc2626)', color: '#fff' }}>Log Out</button>
           </div>
         </div>
       </Modal>
@@ -982,5 +996,13 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
         </div>
       </Modal>
     </div>
+  );
+}
+
+export default function Settings() {
+  return (
+    <SettingsErrorBoundary>
+      <SettingsPage />
+    </SettingsErrorBoundary>
   );
 }
