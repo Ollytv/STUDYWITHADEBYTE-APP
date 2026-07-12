@@ -9,15 +9,6 @@ import {
   CourseClass, AttendanceRecord, StudentProfile,
   AppSettings, GPACourse, Assignment, StudySession, CourseMaterial,
 } from '../types';
-import {
-  saveMaterialToIDB,
-  getMaterialsFromIDB,
-  deleteMaterialFromIDB,
-} from './materialStorage';
-import {
-  saveProfilePicture,
-  loadProfilePicture,
-} from './profilePictureStorage';
 
 // ── Environment-safe logger ───────────────────────────────────────────────────
 // In development: logs full error details to the console.
@@ -208,57 +199,23 @@ export async function deleteAttendance(id: string): Promise<void> {
 // ── Profile ───────────────────────────────────────────────────────────────────
 export async function getProfile(): Promise<StudentProfile | undefined> {
   const snap = await getDoc(userDoc('meta', 'profile'));
-  if (!snap.exists()) return undefined;
-
-  const profile = snap.data() as StudentProfile;
-
-  // ── Reconstruct avatar blob: URL from IndexedDB ────────────────────────
-  // blob: URLs are session-scoped — they cannot be stored in Firestore.
-  // We store '' in Firestore and rebuild the URL here on every app load.
-  // If no picture is stored, avatar stays as whatever Firestore has (could
-  // be a legacy Firebase Storage URL from before this migration).
-  const blobUrl = await loadProfilePicture();
-  if (blobUrl) {
-    console.info('[db.getProfile] Avatar loaded from IndexedDB.');
-    return { ...profile, avatar: blobUrl };
-  }
-
-  // No IndexedDB avatar — return profile as-is (may have legacy Storage URL
-  // or empty string — both are handled correctly by the UI)
-  return profile;
+  return snap.exists() ? (snap.data() as StudentProfile) : undefined;
 }
+
 export async function saveProfile(profile: StudentProfile): Promise<void> {
-  let avatarUrl = profile.avatar || '';
+  // profile.avatar must already be a Firebase Storage download URL by the
+  // time it reaches here (Settings.tsx uploads via uploadProfilePicture()
+  // before calling this). data:/blob: URLs are session-scoped and are
+  // never persisted — they're normalised to '' so a bad caller can't leak
+  // a dead URL into Firestore.
+  const avatarUrl =
+    profile.avatar?.startsWith('data:') || profile.avatar?.startsWith('blob:')
+      ? ''
+      : (profile.avatar || '');
 
-  if (avatarUrl.startsWith('data:')) {
-    // ── Profile picture → IndexedDB (not Firebase Storage) ────────────────
-    // saveProfilePicture() validates MIME type and size, stores the binary
-    // in IndexedDB, and returns a blob: URL for immediate display.
-    // Errors are thrown with clear messages and logged to the console.
-    try {
-      avatarUrl = await saveProfilePicture(avatarUrl);
-      console.info('[db.saveProfile] Avatar saved to IndexedDB successfully.');
-    } catch (err) {
-      // Log clearly so upload failures are visible in DevTools
-      console.error('[db.saveProfile] Avatar save to IndexedDB failed:', err);
-      throw err; // re-throw so Settings.tsx can show the user an error
-    }
-  } else if (!avatarUrl && profile.avatar === '') {
-    // ── Avatar explicitly cleared — remove from IndexedDB ─────────────────
-    const { deleteProfilePicture } = await import('./profilePictureStorage');
-    await deleteProfilePicture();
-  }
-
-  // avatarUrl is now a blob: URL (new upload), existing blob: URL (no change),
-  // or empty string (cleared). Do NOT persist blob: URLs to Firestore —
-  // they are session-scoped and invalid after reload. Store empty string instead
-  // so getProfile() + loadProfilePicture() reconstruct the URL on next load.
-  const firestoreAvatarValue = avatarUrl.startsWith('blob:') ? '' : avatarUrl;
-
-  // Enforce field length limits on profile data
   const profileToSave: StudentProfile = {
     ...profile,
-    avatar:       firestoreAvatarValue,
+    avatar:       avatarUrl,
     fullName:     truncate(profile.fullName,     LIMITS.fullName),
     department:   truncate(profile.department,   LIMITS.department),
     matricNumber: truncate(profile.matricNumber, LIMITS.matricNumber),
@@ -268,12 +225,16 @@ export async function saveProfile(profile: StudentProfile): Promise<void> {
   };
 
   await setDoc(userDoc('meta', 'profile'), stripUndefined(profileToSave), { merge: true });
+
+  // Mirror to top-level users/{uid} doc, including photoURL — this is the
+  // document other devices/tabs read via listenToProfile() for real-time sync.
   await setDoc(
     doc(firestore, 'users', uid()),
     {
       fullName:     profileToSave.fullName,
       department:   profileToSave.department,
       programLevel: profileToSave.programLevel,
+      photoURL:     avatarUrl,
       ...(profileToSave.cgpaScale !== undefined ? { cgpaScale: profileToSave.cgpaScale } : {}),
       updatedAt:    serverTimestamp(),
     },
@@ -335,23 +296,21 @@ export async function saveStudySession(s: StudySession): Promise<void> {
 }
 
 // ── Materials ─────────────────────────────────────────────────────────────────
-//
-// All material storage now goes through IndexedDB via materialStorage.ts.
-// The Firebase Storage upload path has been removed. When you are ready to
-// migrate to Firebase Storage, implement the same interface in a new file
-// and swap the imports in materialStorage.ts — no changes needed here or
-// in the UI layer.
+// Metadata lives in Firestore (users/{uid}/materials/{id}); the actual file
+// bytes live in Firebase Storage at users/{uid}/materials/{id}_{fileName}
+// (see uploadCourseMaterial in storage.ts). This collection only stores the
+// download URL + metadata, so it's the single source of truth across devices.
 
 export async function getAllMaterials(): Promise<CourseMaterial[]> {
-  return getMaterialsFromIDB();
+  return getAll<CourseMaterial>('materials');
 }
 
 export async function saveMaterial(m: CourseMaterial): Promise<void> {
-  await saveMaterialToIDB(m);
+  await save('materials', m);
 }
 
 export async function deleteMaterial(id: string): Promise<void> {
-  await deleteMaterialFromIDB(id);
+  await remove('materials', id);
 }
 
 // ── Real-time listeners ───────────────────────────────────────────────────────
@@ -368,6 +327,22 @@ export function listenToAssignments(
 ): Unsubscribe {
   return onSnapshot(userCol('assignments'), snap => {
     callback(snap.docs.map(d => d.data() as Assignment));
+  });
+}
+
+export function listenToProfile(
+  callback: (profile: StudentProfile | undefined) => void
+): Unsubscribe {
+  return onSnapshot(userDoc('meta', 'profile'), snap => {
+    callback(snap.exists() ? (snap.data() as StudentProfile) : undefined);
+  });
+}
+
+export function listenToMaterials(
+  callback: (materials: CourseMaterial[]) => void
+): Unsubscribe {
+  return onSnapshot(userCol('materials'), snap => {
+    callback(snap.docs.map(d => d.data() as CourseMaterial));
   });
 }
 

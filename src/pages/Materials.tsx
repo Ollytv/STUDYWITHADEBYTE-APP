@@ -265,8 +265,9 @@ export default function Materials() {
         createdAt:    new Date().toISOString(),
       };
 
-      // Optimistically add to store so the list updates immediately
-      addMaterial(material);
+      // Persist to Firestore (and optimistically update local state) so the
+      // material shows up on other devices/tabs in real time.
+      await addMaterial(material);
 
       setUploadProgress(100);
       setUploadStatus('done');

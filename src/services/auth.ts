@@ -123,7 +123,23 @@ export async function resendVerificationEmail(): Promise<void> {
 
 // ── Auth State Listener ───────────────────────────────────────────────────────
 export function onAuthChange(callback: (user: AuthUser | null) => void): () => void {
-  return onAuthStateChanged(auth, callback);
+  return onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      callback(null);
+      return;
+    }
+    try {
+      // Forces Firebase to re-fetch the latest account state from the
+      // server instead of trusting whatever was cached locally — required
+      // for profile changes to propagate correctly across devices/tabs.
+      await user.reload();
+    } catch (e) {
+      console.warn('[Auth] user.reload() failed, continuing with cached user:', e);
+    }
+    // Use auth.currentUser (not the stale `user` param) — reload() may
+    // replace the underlying user object internally.
+    callback(auth.currentUser);
+  });
 }
 
 // ── Get current user ──────────────────────────────────────────────────────────

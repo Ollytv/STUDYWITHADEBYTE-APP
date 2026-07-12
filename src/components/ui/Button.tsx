@@ -47,7 +47,8 @@ export function Button({
         transition-all duration-150
         ${variants[variant]}
         ${sizes[size]}
-        ${fullWidth ? 'w-full' : ''}
+        ${fullWidth ? 'w-full flex-1 min-w-0' : ''}
+        ${fullWidth ? 'whitespace-nowrap' : ''}
         ${disabled ? 'opacity-40 cursor-not-allowed' : ''}
         ${className}
       `}

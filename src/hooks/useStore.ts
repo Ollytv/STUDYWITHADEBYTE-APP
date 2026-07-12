@@ -102,7 +102,7 @@ interface AppState {
   deleteAssignment: (id: string) => Promise<void>;
   toggleAssignment: (id: string) => Promise<void>;
   addStudySession: (s: Omit<StudySession, 'id'>) => Promise<void>;
-  addMaterial: (m: CourseMaterial) => void;  // optimistic — material already saved to IDB
+  addMaterial: (m: CourseMaterial) => Promise<void>;
   deleteMaterial: (id: string) => Promise<void>;
   saveProfile: (p: StudentProfile) => Promise<void>;
   updateSettings: (u: Partial<AppSettingsExtended>) => Promise<void>;
@@ -130,7 +130,15 @@ export const useStore = create<AppState>()(
       // currentUser + hasProfile are the two flags App.tsx uses.
       // onboardingComplete in settings is NOT used for routing anymore.
       initAuth: () => {
-        return onAuthChange(async (user) => {
+        let profileUnsub: (() => void) | null = null;
+        let materialsUnsub: (() => void) | null = null;
+
+        const authUnsub = onAuthChange(async (user) => {
+          // Tear down previous listeners on every auth transition — avoids
+          // leaking a listener bound to the previous user's data.
+          profileUnsub?.();   profileUnsub = null;
+          materialsUnsub?.(); materialsUnsub = null;
+
           if (!user) {
             // ── LOGGED OUT ──────────────────────────────────────────────────
             // Clear everything. currentUser = null is the ONLY signal
@@ -172,6 +180,17 @@ export const useStore = create<AppState>()(
                   firstLaunch: false,
                 },
               });
+
+              // ── Real-time cross-device sync ──────────────────────────────
+              // Firestore is the source of truth from here on — any change
+              // made on another device/tab (avatar upload, new material)
+              // pushes straight into local state via these listeners.
+              profileUnsub = db.listenToProfile(p => {
+                if (p) set({ profile: normaliseProfile(p) || null });
+              });
+              materialsUnsub = db.listenToMaterials(materials => {
+                set({ materials });
+              });
             } else {
               // New user — no profile yet, show onboarding
               set({
@@ -190,6 +209,12 @@ export const useStore = create<AppState>()(
             set({ authLoading: false, hasProfile: false });
           }
         });
+
+        return () => {
+          authUnsub();
+          profileUnsub?.();
+          materialsUnsub?.();
+        };
       },
 
       // ── signUp ────────────────────────────────────────────────────────────
@@ -410,11 +435,13 @@ export const useStore = create<AppState>()(
         set(st => ({ studySessions: [...st.studySessions, s] }));
       },
 
-      // addMaterial is now a pure optimistic store update.
-      // The IDB write happens in Materials.tsx (via saveMaterialToIDB) BEFORE
-      // this is called, so the data is already persisted by the time it hits state.
-      addMaterial: (material: CourseMaterial) => {
-        set(s => ({ materials: [...s.materials, material] }));
+      // addMaterial: optimistic local update for instant UI feedback, then
+      // persists to Firestore. listenToMaterials() (set up in initAuth)
+      // reconciles this with the authoritative copy and is what makes the
+      // material appear on other devices/tabs in real time.
+      addMaterial: async (material: CourseMaterial) => {
+        set(s => ({ materials: [...s.materials.filter(m => m.id !== material.id), material] }));
+        await db.saveMaterial(material);
       },
 
       deleteMaterial: async id => {
