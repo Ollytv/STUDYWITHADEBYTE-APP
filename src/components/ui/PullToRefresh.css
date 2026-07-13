@@ -1,0 +1,86 @@
+/* src/components/ui/PullToRefresh.css */
+
+.ptr-container {
+  position: relative;
+  height: 100%;
+  min-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  /* iOS momentum scrolling — keeps the gesture feeling native */
+  -webkit-overflow-scrolling: touch;
+
+  /* Prevents the browser's own overscroll/refresh chrome (Android Chrome,
+     some iOS PWA contexts) from fighting with our custom indicator. */
+  overscroll-behavior-y: contain;
+}
+
+.ptr-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+
+  background: #1a1a1a;
+  transition: opacity 0.15s ease-out;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Smooths the snap-back once the finger lifts (refresh resolves / cancelled pull) */
+.ptr-indicator--idle {
+  transition: height 0.25s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.15s ease-out;
+}
+
+.ptr-indicator__inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  will-change: transform;
+}
+
+.ptr-spinner {
+  width: 24px;
+  height: 24px;
+  color: #e53e3e; /* brand red accent */
+}
+
+.ptr-spinner__track {
+  color: #e53e3e;
+}
+
+.ptr-spinner__arc {
+  color: #e53e3e;
+}
+
+.ptr-spinner--spin {
+  animation: ptr-rotate 0.7s linear infinite;
+}
+
+@keyframes ptr-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.ptr-content {
+  position: relative;
+  z-index: 10;
+  background: inherit;
+  will-change: transform;
+}
+
+/* No transition while actively dragging (handled via direct style updates in
+   the component) — only snap back smoothly once the finger lifts. */
+.ptr-indicator--idle ~ .ptr-content,
+.ptr-indicator--refreshing ~ .ptr-content {
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Desktop: gesture never engages (no touch events fire), so ptr-container
+   just behaves like a normal scroll container — no extra rules needed. */

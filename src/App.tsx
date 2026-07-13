@@ -7,6 +7,7 @@ import { RequireAdmin } from './components/admin/RequireAdmin';
 import BottomNav from './components/layout/BottomNav';
 import { NotificationAlert } from './components/ui/NotificationAlert';
 import InstallPrompt from './components/ui/InstallPrompt';
+import PullToRefresh from './components/ui/PullToRefresh';
 import SplashScreen from './pages/SplashScreen';
 import Landing from './pages/Landing';
 import AuthScreen from './pages/AuthScreen';
@@ -141,7 +142,7 @@ export default function App() {
 }
 
 function MainApp() {
-  const { settings } = useStore();
+  const { settings, loadData } = useStore();
   const { alert, dismissAlert } = useNotifications();
   const location = useLocation();
 
@@ -151,25 +152,27 @@ function MainApp() {
     <div className={settings?.theme === 'dark' ? 'dark' : ''}>
       <NotificationAlert visible={alert.visible} payload={alert.payload} onDismiss={dismissAlert} />
       <InstallPrompt />
-      <div className="bg-dark-950 min-h-screen pb-20">
-        <Suspense fallback={<SplashScreen />}>
-          <Routes>
-            <Route index              element={<Dashboard />} />
-            <Route path="timetable"   element={<Timetable />} />
-            <Route path="attendance"  element={<Attendance />} />
-            <Route path="settings"    element={<Settings />} />
-            <Route path="more"        element={<More />} />
-            <Route path="import"      element={<ImportPage />} />
-            <Route path="gpa"         element={<GPA />} />
-            <Route path="timer"       element={<Timer />} />
-            <Route path="assignments" element={<Assignments />} />
-            <Route path="materials"   element={<Materials />} />
-            <Route path="ai"          element={<AIAssistant />} />
-            <Route path="*" element={<Navigate to={ROUTES.app.root} replace />} />
-          </Routes>
-        </Suspense>
-        {showBottomNav && <BottomNav />}
-      </div>
+      <PullToRefresh onRefresh={loadData}>
+        <div className="bg-dark-950 min-h-screen pb-20">
+          <Suspense fallback={<SplashScreen />}>
+            <Routes>
+              <Route index              element={<Dashboard />} />
+              <Route path="timetable"   element={<Timetable />} />
+              <Route path="attendance"  element={<Attendance />} />
+              <Route path="settings"    element={<Settings />} />
+              <Route path="more"        element={<More />} />
+              <Route path="import"      element={<ImportPage />} />
+              <Route path="gpa"         element={<GPA />} />
+              <Route path="timer"       element={<Timer />} />
+              <Route path="assignments" element={<Assignments />} />
+              <Route path="materials"   element={<Materials />} />
+              <Route path="ai"          element={<AIAssistant />} />
+              <Route path="*" element={<Navigate to={ROUTES.app.root} replace />} />
+            </Routes>
+          </Suspense>
+          {showBottomNav && <BottomNav />}
+        </div>
+      </PullToRefresh>
     </div>
   );
 }
