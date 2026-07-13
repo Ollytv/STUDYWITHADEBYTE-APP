@@ -163,7 +163,7 @@ function MainApp() {
              <PullToRefresh> for the pull gesture — that never adds a
              second overflow:auto container, it just reads scroll position
              from this element. ─────────────────────────────────────────── */}
-      <div className="app-scroll">
+      <div className={`app-scroll${showBottomNav ? ' has-bottom-nav' : ''}`}>
         <Suspense fallback={<SplashScreen />}>
           <Routes>
             <Route index              element={<Dashboard />} />

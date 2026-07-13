@@ -8,6 +8,16 @@ import path from 'path';
 const DIST = path.resolve('dist');
 const PORT = 4173;
 
+// The real production origin. Puppeteer has to navigate to a *local* server
+// to render the page (there's nothing else to render against at build time),
+// so any code that derives canonical URLs, og:url, JSON-LD, or hreflang tags
+// from `window.location.origin` bakes in `http://localhost:4173` instead of
+// this. That's almost certainly why your head has localhost links in it —
+// find that code (search the repo for `location.origin` / `location.href`
+// in SEO/meta components) and have it read this value at build/runtime
+// instead. Set this from an env var so staging/prod can differ if needed.
+const PRODUCTION_ORIGIN = process.env.VITE_SITE_URL || 'https://studibyte.com';
+
 const ROUTES = [
   '/',
   '/about',
@@ -60,7 +70,12 @@ async function main() {
         console.warn(`  ⚠ #root is EMPTY for ${route}`);
       }
 
-      const html = await page.content();
+      // Safety net: even after fixing the source of the leak, strip any
+      // remaining references to the local prerender server so a regression
+      // there can never ship localhost links to production again.
+      const localOrigin = `http://localhost:${PORT}`;
+      const html = (await page.content()).split(localOrigin).join(PRODUCTION_ORIGIN);
+
       const outDir = route === '/' ? DIST : path.join(DIST, route);
       await fs.mkdir(outDir, { recursive: true });
       await fs.writeFile(path.join(outDir, 'index.html'), html, 'utf8');

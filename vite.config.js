@@ -21,6 +21,12 @@ export default defineConfig(function (_a) {
             'Add them to your .env file or Netlify environment variable settings.\n');
     }
     return {
+        // Explicit relative base so every asset/link Vite emits is written as
+        // "/assets/..." rather than resolved against whatever host happens to
+        // serve the build. (This was already the default, but pinning it here
+        // stops it from silently changing if a preview/deploy env var like
+        // ASSET_URL or a CDN base ever gets introduced later.)
+        base: '/',
         plugins: [
             react(),
             VitePWA({

@@ -59,6 +59,26 @@ function DownloadIcon() {
   );
 }
 
+// Prevents the full-screen install sheet from ever rendering for automated
+// clients — search engine crawlers, social-link-preview bots, and the
+// headless Puppeteer instance our own prerender.mjs script uses. Google
+// treats a full-screen modal shown on mount as an intrusive interstitial and
+// will flag/penalize pages for it, and it also blocks the crawler from
+// seeing the actual page content underneath.
+function isAutomatedClient(): boolean {
+  if (typeof navigator === 'undefined') return false;
+
+  // navigator.webdriver is set to true by Puppeteer, Playwright, Selenium,
+  // and most headless browsers (including our own prerender.mjs run) —
+  // this alone covers the exact case you're seeing in Search Console.
+  if (navigator.webdriver) return true;
+
+  const ua = navigator.userAgent || '';
+  return /bot|googlebot|bingbot|yandexbot|baiduspider|duckduckbot|slurp|crawler|spider|robot|crawling|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|telegrambot|whatsapp|embedly|quora link preview|pinterest|prerender|headlesschrome|lighthouse/i.test(
+    ua
+  );
+}
+
 const BENEFITS = ['Faster access', 'Works like a real app', 'Quick study access', 'Better mobile experience'];
 
 const STEPS: Record<Platform, { icon: JSX.Element; text: string }[]> = {
@@ -101,7 +121,7 @@ export default function InstallPrompt() {
     return () => cancelAnimationFrame(frame);
   }, [shouldShow]);
 
-  if (!shouldShow) return null;
+  if (!shouldShow || isAutomatedClient()) return null;
 
   const handleInstallNow = async () => {
     if (canUseNativePrompt) {

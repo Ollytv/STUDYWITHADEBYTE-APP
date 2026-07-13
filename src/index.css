@@ -107,14 +107,12 @@
 }
 
 @layer utilities {
-  /* Safe area padding utilities */
-  .pt-safe {
-    padding-top: env(safe-area-inset-top, 0px);
-  }
-
-  .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
+  /* Safe area padding utilities live outside @layer now — see the single
+     consolidated definitions near the bottom of this file. Keeping them
+     out of @layer utilities means Tailwind's layer ordering can't cause
+     them to silently lose or win the cascade against the plain CSS rules
+     below, which is what was happening with three conflicting .pb-safe
+     definitions previously in this file. */
 
   /* Glass morphism */
   .glass {
@@ -192,8 +190,6 @@ html, body {
 
 /* v2 additions */
 .touch-manipulation { touch-action: manipulation; }
-.pb-safe { padding-bottom: env(safe-area-inset-bottom, 16px); }
-.pt-safe { padding-top: env(safe-area-inset-top, 0px); }
 
 /* Prevent 300ms tap delay globally */
 a, button, [role="button"] {
@@ -300,11 +296,21 @@ p, h1, h2, h3, h4, h5, h6, span, a, button, label {
   }
 }
 
-/* Prevent bottom nav from overlapping content on notched devices */
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-  .pb-safe {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
-  }
+/* ── Safe-area padding utilities — single source of truth ──────────────────
+   Previously .pb-safe/.pt-safe were each defined 2-3 times across this file
+   (once inside @layer utilities, once in "v2 additions", once here), with
+   different fallback/offset values. Same specificity + conflicting values
+   meant whichever was physically last in the *compiled* output silently
+   won — fragile, and the likely cause of inconsistent gaps under fixed
+   bottom elements on some views/devices but not others. Fallback values
+   with `env()` apply on any browser (env() returns 0 when unsupported/no
+   notch, so no @supports gate is actually needed). */
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.pb-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
 }
 
 /* Fix: textarea resize handle on iOS can break layout */
@@ -361,8 +367,14 @@ textarea {
 }
 
 /* Hard physical buffer above the fixed BottomNav so no content — cards,
-   form fields, buttons — can ever slide underneath it, on any page. */
-.app-scroll > * {
+   form fields, buttons — can ever slide underneath it, on any page.
+   Scoped to .has-bottom-nav (set in App.tsx alongside `showBottomNav`)
+   rather than every .app-scroll — previously this applied unconditionally,
+   so any view that legitimately renders without BottomNav (admin routes,
+   the logged-out gate, onboarding, and INNER_APP_PATHS views) still
+   reserved 90px for a nav bar that was never there, showing up as dead
+   white space at the bottom of exactly those views. */
+.app-scroll.has-bottom-nav > * {
   padding-bottom: 90px;
 }
 
