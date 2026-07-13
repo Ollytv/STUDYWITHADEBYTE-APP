@@ -1,0 +1,39 @@
+/* src/app-shell.css */
+/* Strict containerization for the authenticated app shell (MainApp).
+   Header/alerts and BottomNav are static, grounded UI that sit OUTSIDE
+   the scroll/pull tree entirely — only .app-scroll (the routed page
+   content) scrolls or responds to the pull-to-refresh gesture. */
+
+html, body, #root {
+  height: 100%;
+  /* Safari iOS: 100vh includes the address bar's max height, causing
+     jumpy resizing as it shows/hides. -webkit-fill-available reports the
+     actual visible viewport instead. Layered as a fallback since it's
+     WebKit-only and ignored elsewhere. */
+  height: -webkit-fill-available;
+}
+
+.app-shell {
+  position: relative;
+  height: 100vh;
+  height: -webkit-fill-available;
+  overflow: hidden; /* the shell itself never scrolls — only .app-scroll does */
+  display: flex;
+  flex-direction: column;
+}
+
+/* The single scrollable region — this is what PullToRefresh wraps.
+   flex: 1 + min-height: 0 is what lets it actually shrink to fill the
+   remaining space in a flex column instead of blowing out the shell
+   (the classic flexbox overflow gotcha). */
+.app-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+}
+
+/* Space for the fixed BottomNav so the last card in any feed isn't
+   hidden behind it. Matches BottomNav's height (~80px / Tailwind pb-20). */
+.app-scroll .ptr-content {
+  padding-bottom: 5rem;
+}

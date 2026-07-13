@@ -8,6 +8,7 @@ import BottomNav from './components/layout/BottomNav';
 import { NotificationAlert } from './components/ui/NotificationAlert';
 import InstallPrompt from './components/ui/InstallPrompt';
 import PullToRefresh from './components/ui/PullToRefresh';
+import './app-shell.css';
 import SplashScreen from './pages/SplashScreen';
 import Landing from './pages/Landing';
 import AuthScreen from './pages/AuthScreen';
@@ -75,7 +76,7 @@ export default function App() {
   // admin account doesn't need a student profile document to sign in here.
   if (ADMIN_PATHS.includes(location.pathname)) {
     return (
-      <div className="dark bg-dark-950 min-h-screen">
+      <div className="dark bg-dark-950 app-shell" style={{ overflowY: "auto" }}>
         <Suspense fallback={<SplashScreen />}>
           <Routes>
             <Route path={ROUTES.adminLogin} element={<AdminLogin />} />
@@ -96,7 +97,7 @@ export default function App() {
   // ── Gate 2: Logged out — public marketing site + auth ──────────────────
   if (!currentUser) {
     return (
-      <div className="dark bg-dark-950 min-h-screen">
+      <div className="dark bg-dark-950 app-shell" style={{ overflowY: "auto" }}>
         <Suspense fallback={<SplashScreen />}>
           <Routes>
             <Route path={ROUTES.home}     element={<Landing onGetStarted={() => navigate(ROUTES.auth)} />} />
@@ -120,7 +121,7 @@ export default function App() {
   // ── Gate 3: Logged in, no profile yet → Onboarding ─────────────────────
   if (!hasProfile) {
     return (
-      <div className="dark bg-dark-950 min-h-screen">
+      <div className="dark bg-dark-950 app-shell" style={{ overflowY: "auto" }}>
         <Routes>
           <Route path={ROUTES.onboarding} element={<Onboarding />} />
           <Route path="*" element={<Navigate to={ROUTES.onboarding} replace />} />
@@ -149,30 +150,33 @@ function MainApp() {
   const showBottomNav = !INNER_APP_PATHS.includes(location.pathname);
 
   return (
-    <div className={settings?.theme === 'dark' ? 'dark' : ''}>
+    <div className={`app-shell bg-dark-950 ${settings?.theme === 'dark' ? 'dark' : ''}`}>
+      {/* ── Static layer — grounded, never part of the scroll/pull tree ──── */}
       <NotificationAlert visible={alert.visible} payload={alert.payload} onDismiss={dismissAlert} />
       <InstallPrompt />
-      <PullToRefresh onRefresh={loadData}>
-        <div className="bg-dark-950 min-h-screen pb-20">
-          <Suspense fallback={<SplashScreen />}>
-            <Routes>
-              <Route index              element={<Dashboard />} />
-              <Route path="timetable"   element={<Timetable />} />
-              <Route path="attendance"  element={<Attendance />} />
-              <Route path="settings"    element={<Settings />} />
-              <Route path="more"        element={<More />} />
-              <Route path="import"      element={<ImportPage />} />
-              <Route path="gpa"         element={<GPA />} />
-              <Route path="timer"       element={<Timer />} />
-              <Route path="assignments" element={<Assignments />} />
-              <Route path="materials"   element={<Materials />} />
-              <Route path="ai"          element={<AIAssistant />} />
-              <Route path="*" element={<Navigate to={ROUTES.app.root} replace />} />
-            </Routes>
-          </Suspense>
-          {showBottomNav && <BottomNav />}
-        </div>
+
+      {/* ── Scrollable middle region — the ONLY thing PullToRefresh wraps ── */}
+      <PullToRefresh onRefresh={loadData} className="app-scroll">
+        <Suspense fallback={<SplashScreen />}>
+          <Routes>
+            <Route index              element={<Dashboard />} />
+            <Route path="timetable"   element={<Timetable />} />
+            <Route path="attendance"  element={<Attendance />} />
+            <Route path="settings"    element={<Settings />} />
+            <Route path="more"        element={<More />} />
+            <Route path="import"      element={<ImportPage />} />
+            <Route path="gpa"         element={<GPA />} />
+            <Route path="timer"       element={<Timer />} />
+            <Route path="assignments" element={<Assignments />} />
+            <Route path="materials"   element={<Materials />} />
+            <Route path="ai"          element={<AIAssistant />} />
+            <Route path="*" element={<Navigate to={ROUTES.app.root} replace />} />
+          </Routes>
+        </Suspense>
       </PullToRefresh>
+
+      {/* ── Static layer — grounded, never shifts during pull/scroll ─────── */}
+      {showBottomNav && <BottomNav />}
     </div>
   );
 }
