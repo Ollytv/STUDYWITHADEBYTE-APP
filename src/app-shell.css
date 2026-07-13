@@ -8,15 +8,26 @@ html, body, #root {
   height: 100%;
   /* Safari iOS: 100vh includes the address bar's max height, causing
      jumpy resizing as it shows/hides. -webkit-fill-available reports the
-     actual visible viewport instead. Layered as a fallback since it's
-     WebKit-only and ignored elsewhere. */
+     actual visible viewport instead (older WebKit fallback). */
   height: -webkit-fill-available;
+  /* Modern, purpose-built fix: dvh tracks the REAL visible viewport as
+     browser chrome shows/hides. vh and fill-available can both mis-report
+     and leave dead black space below the visible screen — this is what
+     was causing it. Unsupported browsers just ignore this line. */
+  height: 100dvh;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;          /* the page itself never scrolls — only .app-scroll does */
+  overscroll-behavior: none; /* kills native bounce, which would otherwise reveal this area */
+  background-color: #0a0a0a; /* matches app dark bg — no flash if anything peeks through */
 }
 
 .app-shell {
   position: relative;
   height: 100vh;
   height: -webkit-fill-available;
+  height: 100dvh;
   overflow: hidden; /* the shell itself never scrolls — only .app-scroll does */
   display: flex;
   flex-direction: column;
