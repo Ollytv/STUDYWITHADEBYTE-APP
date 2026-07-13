@@ -7,7 +7,6 @@ import { RequireAdmin } from './components/admin/RequireAdmin';
 import BottomNav from './components/layout/BottomNav';
 import { NotificationAlert } from './components/ui/NotificationAlert';
 import InstallPrompt from './components/ui/InstallPrompt';
-import './app-shell.css';
 import SplashScreen from './pages/SplashScreen';
 import Landing from './pages/Landing';
 import AuthScreen from './pages/AuthScreen';
@@ -75,20 +74,22 @@ export default function App() {
   // admin account doesn't need a student profile document to sign in here.
   if (ADMIN_PATHS.includes(location.pathname)) {
     return (
-      <div className="dark bg-dark-950 app-shell" style={{ overflowY: "auto" }}>
-        <Suspense fallback={<SplashScreen />}>
-          <Routes>
-            <Route path={ROUTES.adminLogin} element={<AdminLogin />} />
-            <Route
-              path={ROUTES.notificationsAdmin}
-              element={
-                <RequireAdmin>
-                  <NotificationsAdmin />
-                </RequireAdmin>
-              }
-            />
-          </Routes>
-        </Suspense>
+      <div className="dark bg-dark-950 app-shell">
+        <div className="app-scroll">
+          <Suspense fallback={<SplashScreen />}>
+            <Routes>
+              <Route path={ROUTES.adminLogin} element={<AdminLogin />} />
+              <Route
+                path={ROUTES.notificationsAdmin}
+                element={
+                  <RequireAdmin>
+                    <NotificationsAdmin />
+                  </RequireAdmin>
+                }
+              />
+            </Routes>
+          </Suspense>
+        </div>
       </div>
     );
   }
@@ -96,22 +97,23 @@ export default function App() {
   // ── Gate 2: Logged out — public marketing site + auth ──────────────────
   if (!currentUser) {
     return (
-      <div className="dark bg-dark-950 app-shell" style={{ overflowY: "auto" }}>
-        <Suspense fallback={<SplashScreen />}>
-          <Routes>
-            <Route path={ROUTES.home}     element={<Landing onGetStarted={() => navigate(ROUTES.auth)} />} />
-            <Route path={ROUTES.about}    element={<About />} />
-            <Route path={ROUTES.features} element={<Features />} />
-            <Route path={ROUTES.faq}      element={<FAQ />} />
-            <Route path={ROUTES.contact}  element={<Contact />} />
-            <Route path={ROUTES.privacy}  element={<Privacy />} />
-            <Route path={ROUTES.terms}    element={<Terms />} />
-            <Route path={ROUTES.support}  element={<Support />} />
-            <Route path={ROUTES.auth}     element={<AuthScreen />} />
-            {/* Unknown or protected path while logged out → Landing */}
-            <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
-          </Routes>
-        </Suspense>
+      <div className="dark bg-dark-950 app-shell">
+        <div className="app-scroll">
+          <Suspense fallback={<SplashScreen />}>
+            <Routes>
+              <Route path={ROUTES.home}     element={<Landing onGetStarted={() => navigate(ROUTES.auth)} />} />
+              <Route path={ROUTES.about}    element={<About />} />
+              <Route path={ROUTES.features} element={<Features />} />
+              <Route path={ROUTES.faq}      element={<FAQ />} />
+              <Route path={ROUTES.contact}  element={<Contact />} />
+              <Route path={ROUTES.privacy}  element={<Privacy />} />
+              <Route path={ROUTES.terms}    element={<Terms />} />
+              <Route path={ROUTES.support}  element={<Support />} />
+              <Route path={ROUTES.auth}     element={<AuthScreen />} />
+              <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
+            </Routes>
+          </Suspense>
+        </div>
         <InstallPrompt />
       </div>
     );
@@ -120,11 +122,13 @@ export default function App() {
   // ── Gate 3: Logged in, no profile yet → Onboarding ─────────────────────
   if (!hasProfile) {
     return (
-      <div className="dark bg-dark-950 app-shell" style={{ overflowY: "auto" }}>
-        <Routes>
-          <Route path={ROUTES.onboarding} element={<Onboarding />} />
-          <Route path="*" element={<Navigate to={ROUTES.onboarding} replace />} />
-        </Routes>
+      <div className="dark bg-dark-950 app-shell">
+        <div className="app-scroll">
+          <Routes>
+            <Route path={ROUTES.onboarding} element={<Onboarding />} />
+            <Route path="*" element={<Navigate to={ROUTES.onboarding} replace />} />
+          </Routes>
+        </div>
         <InstallPrompt />
       </div>
     );
