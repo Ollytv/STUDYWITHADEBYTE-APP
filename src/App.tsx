@@ -7,7 +7,6 @@ import { RequireAdmin } from './components/admin/RequireAdmin';
 import BottomNav from './components/layout/BottomNav';
 import { NotificationAlert } from './components/ui/NotificationAlert';
 import InstallPrompt from './components/ui/InstallPrompt';
-import PullToRefresh from './components/ui/PullToRefresh';
 import './app-shell.css';
 import SplashScreen from './pages/SplashScreen';
 import Landing from './pages/Landing';
@@ -143,7 +142,7 @@ export default function App() {
 }
 
 function MainApp() {
-  const { settings, loadData } = useStore();
+  const { settings } = useStore();
   const { alert, dismissAlert } = useNotifications();
   const location = useLocation();
 
@@ -151,12 +150,16 @@ function MainApp() {
 
   return (
     <div className={`app-shell bg-dark-950 ${settings?.theme === 'dark' ? 'dark' : ''}`}>
-      {/* ── Static layer — grounded, never part of the scroll/pull tree ──── */}
+      {/* ── Static layer — grounded, never part of the scroll tree ────────── */}
       <NotificationAlert visible={alert.visible} payload={alert.payload} onDismiss={dismissAlert} />
       <InstallPrompt />
 
-      {/* ── Scrollable middle region — the ONLY thing PullToRefresh wraps ── */}
-      <PullToRefresh onRefresh={loadData} className="app-scroll">
+      {/* ── The ONE real scroll surface for every page. Individual pages
+             (e.g. Materials.tsx) may wrap their own inner lists in
+             <PullToRefresh> for the pull gesture — that never adds a
+             second overflow:auto container, it just reads scroll position
+             from this element. ─────────────────────────────────────────── */}
+      <div className="app-scroll">
         <Suspense fallback={<SplashScreen />}>
           <Routes>
             <Route index              element={<Dashboard />} />
@@ -173,9 +176,9 @@ function MainApp() {
             <Route path="*" element={<Navigate to={ROUTES.app.root} replace />} />
           </Routes>
         </Suspense>
-      </PullToRefresh>
+      </div>
 
-      {/* ── Static layer — grounded, never shifts during pull/scroll ─────── */}
+      {/* ── Static layer — grounded, never shifts during scroll/pull ─────── */}
       {showBottomNav && <BottomNav />}
     </div>
   );

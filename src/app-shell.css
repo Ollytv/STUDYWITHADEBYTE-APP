@@ -33,18 +33,25 @@ html, body, #root {
   flex-direction: column;
 }
 
-/* The single scrollable region — this is what PullToRefresh wraps.
-   flex: 1 + min-height: 0 is what lets it actually shrink to fill the
-   remaining space in a flex column instead of blowing out the shell
+/* The ONE real scrollable region for every page. Individual pages may wrap
+   an inner sub-list in <PullToRefresh> for the pull gesture, but that
+   component no longer owns scrolling itself — THIS is the single
+   overflow:auto surface app-wide, which is what fixed the double-scroll
+   lock-up bug. flex: 1 + min-height: 0 lets it shrink to fill the
+   remaining space in the flex column instead of blowing out the shell
    (the classic flexbox overflow gotcha). */
 .app-scroll {
   flex: 1 1 auto;
   min-height: 0;
   position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch; /* iOS momentum scrolling */
+  overscroll-behavior-y: contain;    /* stop iOS/Android's native bounce chrome */
 }
 
-/* Space for the fixed BottomNav so the last card in any feed isn't
-   hidden behind it. Matches BottomNav's height (~80px / Tailwind pb-20). */
-.app-scroll .ptr-content {
-  padding-bottom: 5rem;
+/* Hard physical buffer above the fixed BottomNav so no content — cards,
+   form fields, buttons — can ever slide underneath it, on any page. */
+.app-scroll > * {
+  padding-bottom: 90px;
 }

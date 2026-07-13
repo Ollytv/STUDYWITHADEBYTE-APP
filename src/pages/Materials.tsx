@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useStore } from '../hooks/useStore';
+import PullToRefresh from '../components/ui/PullToRefresh';
 import { CourseMaterial } from '../types';
 import { getStorageWarning, getStorageUsage } from '../services/materialStorage';
 import { uploadCourseMaterial, StorageUploadError } from '../services/storage';
@@ -84,7 +85,7 @@ function PreviewModal({ material, onClose }: { material: CourseMaterial; onClose
 
 // ── Main component ─────────────────────────────────────────────────────────
 export default function Materials() {
-  const { materials, addMaterial, deleteMaterial, activeSemester, activeAcademicYear, classes, currentUser } = useStore();
+  const { materials, addMaterial, deleteMaterial, loadData, activeSemester, activeAcademicYear, classes, currentUser } = useStore();
   const navigate = useNavigate();
 
   const [showAdd, setShowAdd]           = useState(false);
@@ -400,68 +401,70 @@ export default function Materials() {
           </div>
         )}
 
-        {/* List */}
-        <div className="px-4 space-y-2.5">
-          {filtered.length === 0 ? (
-            <EmptyState icon={<Upload size={28} />}
-              title={search || filterCourse || filterType !== 'all' ? 'No matches found' : 'No materials yet'}
-              description="Upload PDFs, images, save links and write notes for your courses."
-              action={!search && !filterCourse && filterType === 'all'
-                ? { label: 'Add first material', onClick: () => { resetAll(); setShowAdd(true); } }
-                : undefined}
-            />
-          ) : (
-            filtered.map((m, i) => {
-              const cfg = TYPE_CONFIG[m.type];
-              const Icon = cfg.icon;
-              return (
-                <motion.div key={m.id}
-                  className={`bg-dark-800 border ${cfg.border} rounded-2xl p-4 flex items-center gap-3`}
-                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.04 }}>
-                  <div className={`w-11 h-11 rounded-2xl ${cfg.bg} flex items-center justify-center flex-shrink-0`}>
-                    <Icon size={18} className={cfg.color} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-display font-semibold text-white truncate">{m.name}</p>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      {m.courseCode && <span className="text-xs font-mono text-dark-400">{m.courseCode}</span>}
-                      <span className={`text-xs font-semibold ${cfg.color}`}>{cfg.label}</span>
-                      {m.size && <span className="text-xs text-dark-600">{formatBytes(m.size)}</span>}
-                      {m.createdAt && <span className="text-xs text-dark-600">{formatDate(m.createdAt)}</span>}
+        {/* List — only this scrolls / responds to pull-to-refresh */}
+        <PullToRefresh onRefresh={loadData} className="materials-list-scroll">
+          <div className="px-4 space-y-2.5">
+            {filtered.length === 0 ? (
+              <EmptyState icon={<Upload size={28} />}
+                title={search || filterCourse || filterType !== 'all' ? 'No matches found' : 'No materials yet'}
+                description="Upload PDFs, images, save links and write notes for your courses."
+                action={!search && !filterCourse && filterType === 'all'
+                  ? { label: 'Add first material', onClick: () => { resetAll(); setShowAdd(true); } }
+                  : undefined}
+              />
+            ) : (
+              filtered.map((m, i) => {
+                const cfg = TYPE_CONFIG[m.type];
+                const Icon = cfg.icon;
+                return (
+                  <motion.div key={m.id}
+                    className={`bg-dark-800 border ${cfg.border} rounded-2xl p-4 flex items-center gap-3`}
+                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}>
+                    <div className={`w-11 h-11 rounded-2xl ${cfg.bg} flex items-center justify-center flex-shrink-0`}>
+                      <Icon size={18} className={cfg.color} />
                     </div>
-                    {m.type === 'note' && <p className="text-xs text-dark-500 mt-1 line-clamp-1">{m.content}</p>}
-                    {m.type === 'link' && <p className="text-xs text-dark-500 mt-1 truncate">{m.content}</p>}
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    {(m.type === 'note' || m.type === 'link' || m.type === 'image' || m.type === 'pdf') && (
-                      <button onClick={() => setPreviewing(m)}
-                        className="p-2 rounded-xl hover:bg-white/8 text-dark-400 hover:text-white transition-colors touch-manipulation">
-                        <Eye size={15} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-display font-semibold text-white truncate">{m.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        {m.courseCode && <span className="text-xs font-mono text-dark-400">{m.courseCode}</span>}
+                        <span className={`text-xs font-semibold ${cfg.color}`}>{cfg.label}</span>
+                        {m.size && <span className="text-xs text-dark-600">{formatBytes(m.size)}</span>}
+                        {m.createdAt && <span className="text-xs text-dark-600">{formatDate(m.createdAt)}</span>}
+                      </div>
+                      {m.type === 'note' && <p className="text-xs text-dark-500 mt-1 line-clamp-1">{m.content}</p>}
+                      {m.type === 'link' && <p className="text-xs text-dark-500 mt-1 truncate">{m.content}</p>}
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {(m.type === 'note' || m.type === 'link' || m.type === 'image' || m.type === 'pdf') && (
+                        <button onClick={() => setPreviewing(m)}
+                          className="p-2 rounded-xl hover:bg-white/8 text-dark-400 hover:text-white transition-colors touch-manipulation">
+                          <Eye size={15} />
+                        </button>
+                      )}
+                      {(m.type === 'pdf' || m.type === 'image') && (
+                        <button onClick={() => handleDownload(m)}
+                          className="p-2 rounded-xl hover:bg-white/8 text-dark-400 hover:text-white transition-colors touch-manipulation">
+                          <Download size={15} />
+                        </button>
+                      )}
+                      {m.type === 'link' && (
+                        <button onClick={() => window.open(m.content, '_blank')}
+                          className="p-2 rounded-xl hover:bg-white/8 text-dark-400 hover:text-white transition-colors touch-manipulation">
+                          <ExternalLink size={15} />
+                        </button>
+                      )}
+                      <button onClick={() => deleteMaterial(m.id)}
+                        className="p-2 rounded-xl hover:bg-red-500/10 text-dark-600 hover:text-red-400 transition-colors touch-manipulation">
+                        <Trash2 size={15} />
                       </button>
-                    )}
-                    {(m.type === 'pdf' || m.type === 'image') && (
-                      <button onClick={() => handleDownload(m)}
-                        className="p-2 rounded-xl hover:bg-white/8 text-dark-400 hover:text-white transition-colors touch-manipulation">
-                        <Download size={15} />
-                      </button>
-                    )}
-                    {m.type === 'link' && (
-                      <button onClick={() => window.open(m.content, '_blank')}
-                        className="p-2 rounded-xl hover:bg-white/8 text-dark-400 hover:text-white transition-colors touch-manipulation">
-                        <ExternalLink size={15} />
-                      </button>
-                    )}
-                    <button onClick={() => deleteMaterial(m.id)}
-                      className="p-2 rounded-xl hover:bg-red-500/10 text-dark-600 hover:text-red-400 transition-colors touch-manipulation">
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </motion.div>
-              );
-            })
-          )}
-        </div>
+                    </div>
+                  </motion.div>
+                );
+              })
+            )}
+          </div>
+        </PullToRefresh>
       </div>
 
       {/* Preview overlay */}

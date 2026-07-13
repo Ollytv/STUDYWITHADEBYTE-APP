@@ -1,17 +1,12 @@
 /* src/components/ui/PullToRefresh.css */
 
+/* This is a POSITIONING wrapper, not a scroll container. Real scrolling
+   happens on the actual scrollable ancestor (e.g. .app-scroll) — the hook
+   finds that ancestor and checks ITS scrollTop, so nesting this inside an
+   already-scrolling page never produces two competing overflow:auto
+   containers (that double-scroll setup was the cause of the lock-up). */
 .ptr-container {
   position: relative;
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-
-  /* iOS momentum scrolling — keeps the gesture feeling native */
-  -webkit-overflow-scrolling: touch;
-
-  /* Prevents the browser's own overscroll/refresh chrome (Android Chrome,
-     some iOS PWA contexts) from fighting with our custom indicator. */
-  overscroll-behavior-y: contain;
 }
 
 .ptr-indicator {

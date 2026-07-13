@@ -8,6 +8,13 @@
 // full control over the threshold, resistance curve, and only engages
 // the gesture when the scrollable container is actually at scrollTop 0 —
 // so normal page scrolling is never intercepted.
+//
+// IMPORTANT: this hook does NOT make containerRef itself scrollable. It's
+// meant to wrap a sub-region (e.g. a card list) that lives inside an
+// already-scrolling ancestor (e.g. the app's shared .app-scroll region).
+// "At top" is checked against that real scroll ancestor — not the wrapper —
+// so you never end up with two nested overflow:auto containers fighting
+// each other (the bug that caused scroll lock-up previously).
 
 import { useRef, useState, useCallback, useEffect } from 'react';
 
@@ -26,6 +33,20 @@ interface UsePullToRefreshOptions {
 
 export type PullPhase = 'idle' | 'pulling' | 'ready' | 'refreshing';
 
+function findScrollParent(el: HTMLElement | null): HTMLElement {
+  let node = el?.parentElement ?? null;
+  while (node && node !== document.body) {
+    const style = getComputedStyle(node);
+    const overflowY = style.overflowY;
+    if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight) {
+      return node;
+    }
+    node = node.parentElement;
+  }
+  // Fall back to the document scrolling element (whole-page scroll case)
+  return (document.scrollingElement as HTMLElement) ?? document.documentElement;
+}
+
 export function usePullToRefresh<T extends HTMLElement>({
   onRefresh,
   threshold = 70,
@@ -38,6 +59,7 @@ export function usePullToRefresh<T extends HTMLElement>({
   const dragging = useRef(false);
   const refreshingRef = useRef(false); // mirrors state but readable synchronously in listeners
   const pullDistanceRef = useRef(0);   // live value read inside touchend, avoids re-binding listeners every frame
+  const scrollParentRef = useRef<HTMLElement | null>(null);
 
   const [pullDistance, setPullDistance] = useState(0);
   const [phase, setPhase] = useState<PullPhase>('idle');
@@ -53,11 +75,15 @@ export function usePullToRefresh<T extends HTMLElement>({
     const el = containerRef.current;
     if (!el || disabled) return;
 
-    const atTop = () => el.scrollTop <= 0;
+    // Resolved once per mount — the DOM structure around this wrapper
+    // doesn't change at runtime, so no need to re-walk on every touch.
+    scrollParentRef.current = findScrollParent(el);
+
+    const atTop = () => (scrollParentRef.current?.scrollTop ?? 0) <= 0;
 
     const handleTouchStart = (e: TouchEvent) => {
       if (refreshingRef.current) return;
-      // Only arm the gesture if the container is already scrolled to top —
+      // Only arm the gesture if the REAL scroll ancestor is at top —
       // this is what prevents interference with normal scrolling.
       if (!atTop()) return;
       startY.current = e.touches[0].clientY;
@@ -70,7 +96,7 @@ export function usePullToRefresh<T extends HTMLElement>({
       const currentY = e.touches[0].clientY;
       const delta = currentY - startY.current;
 
-      // User is pulling up or container scrolled away from top mid-gesture — bail cleanly.
+      // User is pulling up or the page scrolled away from top mid-gesture — bail cleanly.
       if (delta <= 0 || !atTop()) {
         dragging.current = false;
         setPullDistance(0);
