@@ -271,8 +271,11 @@ p, h1, h2, h3, h4, h5, h6, span, a, button, label {
   word-break: break-all;
 }
 
-/* Safe area fixes — apply to fixed bottom elements */
-.fixed.bottom-0, .fixed.bottom-4, .fixed.bottom-6 {
+/* Safe area fixes — apply to fixed bottom elements. Excludes <nav> (the
+   BottomNav component) since it already computes its own precise safe-area
+   padding internally (NAV_PADDING_Y + env(safe-area-inset-bottom)) — this
+   rule matching it too would silently double that padding. */
+.fixed.bottom-0:not(nav), .fixed.bottom-4:not(nav), .fixed.bottom-6:not(nav) {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 

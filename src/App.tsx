@@ -7,6 +7,7 @@ import { RequireAdmin } from './components/admin/RequireAdmin';
 import BottomNav from './components/layout/BottomNav';
 import { NotificationAlert } from './components/ui/NotificationAlert';
 import InstallPrompt from './components/ui/InstallPrompt';
+import UpdateToast from './components/ui/UpdateToast';
 import SplashScreen from './pages/SplashScreen';
 import Landing from './pages/Landing';
 import AuthScreen from './pages/AuthScreen';
@@ -115,6 +116,7 @@ export default function App() {
           </Suspense>
         </div>
         <InstallPrompt />
+        <UpdateToast />
       </div>
     );
   }
@@ -130,6 +132,7 @@ export default function App() {
           </Routes>
         </div>
         <InstallPrompt />
+        <UpdateToast />
       </div>
     );
   }
@@ -157,6 +160,7 @@ function MainApp() {
       {/* ── Static layer — grounded, never part of the scroll tree ────────── */}
       <NotificationAlert visible={alert.visible} payload={alert.payload} onDismiss={dismissAlert} />
       <InstallPrompt />
+      <UpdateToast />
 
       {/* ── The ONE real scroll surface for every page. Individual pages
              (e.g. Materials.tsx) may wrap their own inner lists in

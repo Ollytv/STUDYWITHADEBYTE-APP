@@ -1,4 +1,4 @@
-// vite.config.ts
+// vite.config.js
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -30,7 +30,13 @@ export default defineConfig(function (_a) {
         plugins: [
             react(),
             VitePWA({
-                registerType: 'autoUpdate',
+                registerType: 'prompt',
+                // We register the service worker ourselves via the
+                // virtual:pwa-register/react hook (see UpdateToast.tsx) so
+                // the app can surface "update available" to the user instead
+                // of updating silently — set this to null so the plugin
+                // doesn't also inject its own auto-registration script.
+                injectRegister: null,
                 includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
                 manifest: {
                     name: 'StudyWithAdebyte',
