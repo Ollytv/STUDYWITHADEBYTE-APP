@@ -26,12 +26,12 @@ export async function verifyFirebaseToken(request: Request, env: Env): Promise<s
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
 
   if (!token) throw new AuthError('Missing Authorization header');
-  if (!env.FIREBASE_PROJECT_ID) throw new AuthError('Auth not configured', 403);
+  if (!env.VITE_FIREBASE_PROJECT_ID) throw new AuthError('Auth not configured', 403);
 
   try {
     const { payload } = await jwtVerify(token, jwks, {
-      issuer: `https://securetoken.google.com/${env.FIREBASE_PROJECT_ID}`,
-      audience: env.FIREBASE_PROJECT_ID,
+      issuer: `https://securetoken.google.com/${env.VITE_FIREBASE_PROJECT_ID}`,
+      audience: env.VITE_FIREBASE_PROJECT_ID,
     });
 
     if (typeof payload.sub !== 'string' || !payload.sub) throw new AuthError('Token missing subject');
