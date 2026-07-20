@@ -16,7 +16,7 @@ const PORT = 4173;
 // find that code (search the repo for `location.origin` / `location.href`
 // in SEO/meta components) and have it read this value at build/runtime
 // instead. Set this from an env var so staging/prod can differ if needed.
-const PRODUCTION_ORIGIN = process.env.VITE_SITE_URL || 'https://studibyte.com';
+const PRODUCTION_ORIGIN = process.env.VITE_SITE_URL || 'https://studibyte.space';
 
 const ROUTES = [
   '/',
@@ -30,7 +30,16 @@ const ROUTES = [
 ];
 
 async function main() {
-  const server = createServer((req, res) => handler(req, res, { public: DIST }));
+  const server = createServer((req, res) =>
+    handler(req, res, {
+      public: DIST,
+      // Without this, serve-handler 404s any route that isn't a real file on
+      // disk (e.g. /about) instead of falling back to index.html — which is
+      // what lets React Router mount and render that route client-side.
+      // That 404 is exactly why #root came back empty for /about.
+      rewrites: [{ source: '**', destination: '/index.html' }],
+    })
+  );
   await new Promise(resolve => server.listen(PORT, resolve));
 
   const browser = await puppeteer.launch({ headless: 'new' });
@@ -55,12 +64,32 @@ async function main() {
       });
       delete navigator.serviceWorker;
     });
-    page.setDefaultNavigationTimeout(30000);
+    page.setDefaultNavigationTimeout(45000);
 
     try {
       const url = `http://localhost:${PORT}${route}`;
       console.log(`Rendering ${route}...`);
-      await page.goto(url, { waitUntil: 'networkidle0' });
+
+      // networkidle0 requires zero open connections for 500ms — Firestore's
+      // realtime channel and Analytics beacons keep a connection open
+      // indefinitely, so that condition never fires and Puppeteer always
+      // times out. networkidle2 (≤2 open connections) tolerates that
+      // background traffic while still waiting for the page's own asset
+      // requests to settle.
+      await page.goto(url, { waitUntil: 'networkidle2' });
+
+      // Belt-and-suspenders: also explicitly wait for #root to actually
+      // have rendered children, rather than trusting network timing alone
+      // to mean "the page is ready".
+      await page.waitForFunction(
+        () => {
+          const root = document.querySelector('#root');
+          return !!root && root.children.length > 0;
+        },
+        { timeout: 15000 }
+      ).catch(() => {
+        console.warn(`  ⚠ #root never gained children within 15s for ${route}`);
+      });
 
       // give client-side state (auth checks, etc.) a moment to settle
       await new Promise(r => setTimeout(r, 1500));

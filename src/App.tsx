@@ -115,7 +115,12 @@ export default function App() {
             </Routes>
           </Suspense>
         </div>
-        <InstallPrompt />
+        {/* No InstallPrompt here — this branch renders your public/SEO
+            marketing pages (Landing, About, guides, etc). A full-screen
+            modal on first paint here is an "intrusive interstitial" for
+            both Googlebot and real search visitors, and can read as
+            blocked/low-value content during an AdSense review. The prompt
+            only makes sense once someone has already signed up. */}
         <UpdateToast />
       </div>
     );
