@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { CalendarDays, AlertTriangle, Clock, Plus, TrendingUp, FileText, Timer, ClipboardList, Zap, ChevronRight, BookOpen, Bell, X } from 'lucide-react';
+import { CalendarDays, AlertTriangle, Clock, Plus, TrendingUp, FileText, Timer, ClipboardList, Zap, ChevronRight, BookOpen, Bell, X, Target, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../hooks/useStore';
 import { ClassCard } from '../components/timetable/ClassCard';
@@ -9,10 +9,18 @@ import { NotificationCenter } from '../components/ui/NotificationCenter';
 import { subscribeUnreadCount } from '../services/notificationCenter';
 import { getCurrentDayName, sortClassesByTime, formatCountdown, getMinutesUntilClass, isClassNow } from '../utils/time';
 import { calculateGPA, getGPAClass, normaliseGPA } from '../utils/gpa';
-import { DEFAULT_CGPA_SCALE, CgpaScale } from '../types';
+import { DEFAULT_CGPA_SCALE, CgpaScale, Exam, DailyByte } from '../types';
 // add import
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../routes';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { db, auth } from '../services/firebase';
+import { TodaysBytes } from '../components/TodaysBytes';
+import { setByteCompleted } from '../services/examService';
+
+function todayISO(): string {
+  return new Date().toISOString().split('T')[0];
+}
 
 const MOTIVATIONS = [
   { text: "Keep pushing — your future self will thank you!", emoji: "🚀" },
@@ -46,6 +54,30 @@ export default function Dashboard() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => subscribeUnreadCount(setUnreadCount), []);
+
+  // ── Today's Bytes (Smart Exam Prep) ──────────────────────────────────────
+  const uid = auth.currentUser?.uid;
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [todaysBytes, setTodaysBytes] = useState<DailyByte[]>([]);
+  const [bytesLoading, setBytesLoading] = useState(true);
+
+  useEffect(() => {
+    if (!uid) return;
+    const unsub = onSnapshot(collection(db, 'users', uid, 'exams'), (snap) => {
+      setExams(snap.docs.map((d) => d.data() as Exam));
+    });
+    return unsub;
+  }, [uid]);
+
+  useEffect(() => {
+    if (!uid) return;
+    const q = query(collection(db, 'users', uid, 'dailyBytes'), where('date', '==', todayISO()));
+    const unsub = onSnapshot(q, (snap) => {
+      setTodaysBytes(snap.docs.map((d) => d.data() as DailyByte));
+      setBytesLoading(false);
+    });
+    return unsub;
+  }, [uid]);
 
   const today = getCurrentDayName();
   const todayClasses = useMemo(() =>
@@ -322,6 +354,14 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
+      {/* ── TODAY'S BYTES (Smart Exam Prep) ──────────────────────────────── */}
+      <TodaysBytes
+        bytes={todaysBytes}
+        exams={exams}
+        loading={bytesLoading}
+        onToggleComplete={(byteId, completed) => setByteCompleted(byteId, completed)}
+      />
+
       {/* ── TODAY'S CLASSES ──────────────────────────────────────────────── */}
       <div className="px-5 mb-5">
         <div className="flex items-center justify-between mb-3">
@@ -382,6 +422,8 @@ export default function Dashboard() {
             { label: 'GPA Tracker', icon: TrendingUp, action: () => navigate(ROUTES.app.gpa),         color: '#fbbf24', bg: 'rgba(251,191,36,0.1)',  border: 'rgba(251,191,36,0.2)' },
             { label: 'Assignments', icon: FileText,   action: () => navigate(ROUTES.app.assignments), color: '#c084fc', bg: 'rgba(192,132,252,0.1)', border: 'rgba(192,132,252,0.2)' },
             { label: 'Study Timer', icon: Timer,      action: () => navigate(ROUTES.app.timer),       color: '#fb923c', bg: 'rgba(251,146,60,0.1)',  border: 'rgba(251,146,60,0.2)' },
+            { label: 'Exam Prep',   icon: Target,     action: () => navigate(ROUTES.app.examPrep),    color: '#38bdf8', bg: 'rgba(56,189,248,0.1)',  border: 'rgba(56,189,248,0.2)' },
+            { label: 'Study Squad', icon: Users,      action: () => navigate(ROUTES.app.squads),      color: '#f472b6', bg: 'rgba(244,114,182,0.1)', border: 'rgba(244,114,182,0.2)' },
           ].map((item, i) => (
             <motion.button key={item.label} onClick={item.action}
               className="rounded-2xl p-4 flex flex-col items-start gap-3 touch-manipulation text-left relative overflow-hidden"

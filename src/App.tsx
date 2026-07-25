@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useStore } from './hooks/useStore';
 import { useNotifications } from './hooks/useNotifications';
-import { ROUTES, PUBLIC_PATHS, INNER_APP_PATHS, ADMIN_PATHS } from './routes';
+import { ROUTES, PUBLIC_PATHS, ADMIN_PATHS, isInnerAppPath } from './routes';
 import { RequireAdmin } from './components/admin/RequireAdmin';
 import BottomNav from './components/layout/BottomNav';
 import { NotificationAlert } from './components/ui/NotificationAlert';
@@ -27,6 +27,9 @@ const Timer       = lazy(() => import('./pages/Timer'));
 const Assignments = lazy(() => import('./pages/Assignments'));
 const Materials   = lazy(() => import('./pages/Materials'));
 const AIAssistant = lazy(() => import('./pages/AIAssistant'));
+const ExamPrep    = lazy(() => import('./pages/ExamPrep'));
+const Squads      = lazy(() => import('./pages/Squads'));
+const SquadJoinPage = lazy(() => import('./pages/SquadJoinPage'));
 
 const About    = lazy(() => import('./pages/public/About'));
 const Features = lazy(() => import('./pages/public/Features'));
@@ -158,7 +161,7 @@ function MainApp() {
   const { alert, dismissAlert } = useNotifications();
   const location = useLocation();
 
-  const showBottomNav = !INNER_APP_PATHS.includes(location.pathname);
+  const showBottomNav = !isInnerAppPath(location.pathname);
 
   return (
     <div className={`app-shell bg-dark-950 ${settings?.theme === 'dark' ? 'dark' : ''}`}>
@@ -186,6 +189,9 @@ function MainApp() {
             <Route path="assignments" element={<Assignments />} />
             <Route path="materials"   element={<Materials />} />
             <Route path="ai"          element={<AIAssistant />} />
+            <Route path="exam-prep"   element={<ExamPrep />} />
+            <Route path="squads"      element={<Squads />} />
+            <Route path="squads/join/:squadId" element={<SquadJoinPage />} />
             <Route path="*" element={<Navigate to={ROUTES.app.root} replace />} />
           </Routes>
         </Suspense>

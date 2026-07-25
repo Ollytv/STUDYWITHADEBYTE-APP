@@ -1,7 +1,8 @@
 // functions/src/fcm.ts
-import * as admin from 'firebase-admin';
 import * as crypto from 'crypto';
-import { db, messaging } from './admin';
+import type { QueryDocumentSnapshot } from 'firebase-admin/firestore';
+import type { Message, TokenMessage, SendResponse } from 'firebase-admin/messaging';
+import { db, messaging, FieldValue } from './admin';
 
 export interface NotificationPayloadInput {
   title:     string;
@@ -54,25 +55,25 @@ async function resolveDevices(target: NotificationTarget): Promise<DeviceRecord[
   if (target.mode === 'all') {
     const snap = await db.collectionGroup('devices').get();
     return snap.docs
-      .map(d => ({ uid: d.ref.parent.parent!.id, token: d.get('token') as string }))
-      .filter(d => !!d.token);
+      .map((d: QueryDocumentSnapshot) => ({ uid: d.ref.parent.parent!.id, token: d.get('token') as string }))
+      .filter((d: DeviceRecord) => !!d.token);
   }
 
   if (target.mode === 'user') {
     const snap = await db.collection('users').doc(target.uid).collection('devices').get();
     return snap.docs
-      .map(d => ({ uid: target.uid, token: d.get('token') as string }))
-      .filter(d => !!d.token);
+      .map((d: QueryDocumentSnapshot) => ({ uid: target.uid, token: d.get('token') as string }))
+      .filter((d: DeviceRecord) => !!d.token);
   }
 
   // segment: users where {field} == {value}
   const usersSnap = await db.collection('users').where(target.field, '==', target.value).get();
   const devicesPerUser = await Promise.all(
-    usersSnap.docs.map(async userDoc => {
+    usersSnap.docs.map(async (userDoc: QueryDocumentSnapshot) => {
       const devSnap = await userDoc.ref.collection('devices').get();
       return devSnap.docs
-        .map(d => ({ uid: userDoc.id, token: d.get('token') as string }))
-        .filter(d => !!d.token);
+        .map((d: QueryDocumentSnapshot) => ({ uid: userDoc.id, token: d.get('token') as string }))
+        .filter((d: DeviceRecord) => !!d.token);
     })
   );
   return devicesPerUser.flat();
@@ -110,7 +111,7 @@ async function writeInboxEntries(
         deepLink:  payload.deepLink ?? '/',
         type:      payload.type ?? 'general',
         read:      false,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
       });
     });
     await batch.commit();
@@ -122,7 +123,7 @@ async function writeInboxEntries(
 // ── Batched send with retry ──────────────────────────────────────────────────
 
 async function sendBatchWithRetry(
-  messages: admin.messaging.Message[],
+  messages: Message[],
   owners: string[]
 ): Promise<{ successCount: number; failureCount: number; invalid: { uid: string; token: string }[] }> {
   let successCount = 0;
@@ -134,11 +135,11 @@ async function sendBatchWithRetry(
 
   while (pendingMessages.length > 0 && attempt <= MAX_RETRIES) {
     const res = await messaging.sendEach(pendingMessages);
-    const retryMessages: admin.messaging.Message[] = [];
+    const retryMessages: Message[] = [];
     const retryOwners: string[] = [];
 
-    res.responses.forEach((r, i) => {
-      const msg = pendingMessages[i] as admin.messaging.TokenMessage;
+    res.responses.forEach((r: SendResponse, i: number) => {
+      const msg = pendingMessages[i] as TokenMessage;
       const uid = pendingOwners[i];
 
       if (r.success) {
@@ -185,7 +186,7 @@ export async function dispatchNotification(
   const uniqueUids = Array.from(new Set(devices.map(d => d.uid)));
   const notificationIdByUid = await writeInboxEntries(uniqueUids, payload);
 
-  const messages: admin.messaging.Message[] = [];
+  const messages: Message[] = [];
   const owners: string[] = [];
 
   devices.forEach(({ uid, token }) => {
@@ -285,6 +286,6 @@ async function logResult(
     triggeredBy,
     campaignId: campaignId ?? null,
     ...result,
-    sentAt: admin.firestore.FieldValue.serverTimestamp(),
+    sentAt: FieldValue.serverTimestamp(),
   });
 }

@@ -1,13 +1,18 @@
 // functions/src/admin.ts
-import * as admin from 'firebase-admin';
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { getMessaging } from 'firebase-admin/messaging';
 import { HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 
-if (admin.apps.length === 0) {
-  admin.initializeApp();
+if (getApps().length === 0) {
+  initializeApp();
 }
 
-export const db        = admin.firestore();
-export const messaging = admin.messaging();
+export const db        = getFirestore();
+export const messaging = getMessaging();
+
+// Re-exported so other modules don't need their own firebase-admin/firestore imports.
+export { FieldValue, Timestamp };
 
 /**
  * Throws HttpsError unless the caller is signed in AND has a doc under

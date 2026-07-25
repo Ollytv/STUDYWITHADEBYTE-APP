@@ -231,3 +231,76 @@ export interface ImportResult {
   rawText: string;
   confidence: number;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SMART EXAM PREP
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ExamTopic {
+  id: string;
+  name: string;
+  masteryScore: number;       // 0–100, updated from quiz attempts
+  totalMinutesStudied: number;
+  lastStudiedAt?: string;
+}
+
+export interface Exam {
+  id: string;
+  courseCode: string;
+  courseName: string;
+  examDate: string;            // ISO date
+  targetDailyMinutes: number;
+  topics: ExamTopic[];
+  semester: Semester;
+  academicYear: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DailyByte {
+  id: string;
+  examId: string;
+  topicId: string;
+  date: string;                // ISO date — the day this byte is scheduled for
+  durationMinutes: number;
+  completed: boolean;
+  completedAt?: string;
+}
+
+export interface QuizAttempt {
+  id: string;
+  examId: string;
+  topicId: string;
+  score: number;               // 0–100
+  takenAt: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STUDY SQUADS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface SquadMember {
+  uid: string;
+  displayName: string;
+  avatar?: string;
+  joinedAt: string;
+}
+
+export interface Squad {
+  id: string;
+  name: string;
+  createdBy: string;           // uid
+  members: SquadMember[];
+  memberUids: string[];        // denormalized for rules array-contains checks
+  streakCount: number;
+  lastAllCompletedDate?: string; // ISO date — last day every member completed their byte
+  dailyGoalMinutes: number;
+  createdAt: string;
+}
+
+// Per-day completion status per member — subcollection: squads/{squadId}/completions/{date}
+export interface SquadDailyCompletion {
+  date: string;                // ISO date, also the doc id
+  completedUids: string[];
+  allCompleted: boolean;
+}

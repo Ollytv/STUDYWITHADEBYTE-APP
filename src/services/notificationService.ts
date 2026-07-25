@@ -88,6 +88,17 @@ export interface NotificationSettings {
   sound:            boolean;
 }
 
+// Canonical values for PushNotificationData.type / NotificationPayloadInput.type.
+// Keep in sync with the literal strings used server-side in
+// functions/src/fcm.ts (default 'general') and functions/src/onByteCompleted.ts
+// ('squadStreak').
+export const PUSH_TYPES = {
+  general:     'general',
+  squadStreak: 'squadStreak',
+} as const;
+
+export type PushType = typeof PUSH_TYPES[keyof typeof PUSH_TYPES];
+
 // Shape of the `data` payload on every FCM message this app sends/receives.
 // Push payloads only carry strings — coerce on the way in.
 export interface PushNotificationData {

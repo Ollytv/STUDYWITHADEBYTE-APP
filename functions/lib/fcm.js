@@ -35,7 +35,6 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.dispatchNotification = dispatchNotification;
 // functions/src/fcm.ts
-const admin = __importStar(require("firebase-admin"));
 const crypto = __importStar(require("crypto"));
 const admin_1 = require("./admin");
 const FCM_BATCH_SIZE = 500; // hard limit per sendEach call
@@ -61,22 +60,22 @@ async function resolveDevices(target) {
     if (target.mode === 'all') {
         const snap = await admin_1.db.collectionGroup('devices').get();
         return snap.docs
-            .map(d => ({ uid: d.ref.parent.parent.id, token: d.get('token') }))
-            .filter(d => !!d.token);
+            .map((d) => ({ uid: d.ref.parent.parent.id, token: d.get('token') }))
+            .filter((d) => !!d.token);
     }
     if (target.mode === 'user') {
         const snap = await admin_1.db.collection('users').doc(target.uid).collection('devices').get();
         return snap.docs
-            .map(d => ({ uid: target.uid, token: d.get('token') }))
-            .filter(d => !!d.token);
+            .map((d) => ({ uid: target.uid, token: d.get('token') }))
+            .filter((d) => !!d.token);
     }
     // segment: users where {field} == {value}
     const usersSnap = await admin_1.db.collection('users').where(target.field, '==', target.value).get();
     const devicesPerUser = await Promise.all(usersSnap.docs.map(async (userDoc) => {
         const devSnap = await userDoc.ref.collection('devices').get();
         return devSnap.docs
-            .map(d => ({ uid: userDoc.id, token: d.get('token') }))
-            .filter(d => !!d.token);
+            .map((d) => ({ uid: userDoc.id, token: d.get('token') }))
+            .filter((d) => !!d.token);
     }));
     return devicesPerUser.flat();
 }
@@ -106,7 +105,7 @@ async function writeInboxEntries(uids, payload) {
                 deepLink: payload.deepLink ?? '/',
                 type: payload.type ?? 'general',
                 read: false,
-                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                createdAt: admin_1.FieldValue.serverTimestamp(),
             });
         });
         await batch.commit();
@@ -246,7 +245,7 @@ async function logResult(target, payload, triggeredBy, campaignId, result) {
         triggeredBy,
         campaignId: campaignId ?? null,
         ...result,
-        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        sentAt: admin_1.FieldValue.serverTimestamp(),
     });
 }
 //# sourceMappingURL=fcm.js.map

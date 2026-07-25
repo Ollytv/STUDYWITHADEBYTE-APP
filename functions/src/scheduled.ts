@@ -1,7 +1,7 @@
 // functions/src/scheduled.ts
-import * as admin from 'firebase-admin';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
-import { db } from './admin';
+import type { QueryDocumentSnapshot } from 'firebase-admin/firestore';
+import { db, FieldValue, Timestamp } from './admin';
 import { dispatchNotification, NotificationTarget, NotificationPayloadInput } from './fcm';
 
 /**
@@ -11,7 +11,7 @@ import { dispatchNotification, NotificationTarget, NotificationPayloadInput } fr
  * (src/services/notificationAdmin.ts::scheduleNotificationCampaign).
  */
 export const processScheduledCampaigns = onSchedule('every 1 minutes', async () => {
-  const now = admin.firestore.Timestamp.now();
+  const now = Timestamp.now();
 
   const dueSnap = await db
     .collection('notificationCampaigns')
@@ -23,7 +23,7 @@ export const processScheduledCampaigns = onSchedule('every 1 minutes', async () 
   if (dueSnap.empty) return;
 
   await Promise.all(
-    dueSnap.docs.map(async campaignDoc => {
+    dueSnap.docs.map(async (campaignDoc: QueryDocumentSnapshot) => {
       const data = campaignDoc.data() as {
         target: NotificationTarget;
         payload: NotificationPayloadInput;
@@ -38,7 +38,7 @@ export const processScheduledCampaigns = onSchedule('every 1 minutes', async () 
         const result = await dispatchNotification(data.target, data.payload, data.createdBy, campaignDoc.id);
         await campaignDoc.ref.update({
           status: 'sent',
-          sentAt: admin.firestore.FieldValue.serverTimestamp(),
+          sentAt: FieldValue.serverTimestamp(),
           result,
         });
       } catch (err) {
