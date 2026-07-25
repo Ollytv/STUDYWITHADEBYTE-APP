@@ -7,7 +7,7 @@ import {
   DEFAULT_PROGRAM_LEVEL, DEFAULT_CGPA_SCALE,
 } from '../types';
 import * as db from '../services/db';
-import { signUp as fbSignUp, signIn as fbSignIn, signOut as fbSignOut, resetPassword as fbResetPassword, onAuthChange, AuthUser } from '../services/auth';
+import { signUp as fbSignUp, signIn as fbSignIn, signOut as fbSignOut, resetPassword as fbResetPassword, signInWithGoogle as fbSignInWithGoogle, onAuthChange, AuthUser } from '../services/auth';
 import { generateId } from '../utils/id';
 
 type AppSettingsExtended = AppSettings & { pin?: string };
@@ -78,6 +78,7 @@ interface AppState {
   initAuth: () => () => void;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   clearAuthError: () => void;
@@ -237,6 +238,23 @@ export const useStore = create<AppState>()(
           await fbSignIn(email, password);
           // onAuthChange fires automatically → sets currentUser, checks profile → Dashboard or Onboarding
         } catch (e: any) {
+          const msg = friendlyAuthError(e.code || e.message);
+          set({ authError: msg });
+          throw new Error(msg);
+        }
+      },
+
+      // ── signInWithGoogle ─────────────────────────────────────────────────
+      signInWithGoogle: async () => {
+        set({ authError: '' });
+        try {
+          await fbSignInWithGoogle();
+          // onAuthChange fires automatically → sets currentUser, checks profile → Dashboard or Onboarding
+        } catch (e: any) {
+          // Popup dismissal isn't a real error — don't surface it as one.
+          if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') {
+            return;
+          }
           const msg = friendlyAuthError(e.code || e.message);
           set({ authError: msg });
           throw new Error(msg);
@@ -509,6 +527,9 @@ function friendlyAuthError(code: string): string {
     'auth/too-many-requests':      'Too many attempts. Please wait and try again.',
     'auth/network-request-failed': 'Network error. Check your connection.',
     'auth/user-disabled':          'This account has been disabled.',
+    'auth/popup-blocked':          'Popup was blocked by your browser. Allow popups and try again.',
+    'auth/account-exists-with-different-credential':
+      'An account already exists with this email using a different sign-in method.',
   };
   return map[code] || 'Something went wrong. Please try again.';
 }

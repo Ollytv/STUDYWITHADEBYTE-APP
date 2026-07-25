@@ -2,6 +2,8 @@
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   updateProfile,
@@ -9,7 +11,7 @@ import {
   sendEmailVerification,
   User,
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
 export type AuthUser = User;
@@ -84,6 +86,32 @@ export async function signUp(
     createdAt:   serverTimestamp(),
     institution: 'POLYIBADAN',
   });
+
+  return cred.user;
+}
+
+// ── Sign In with Google ────────────────────────────────────────────────────
+// Uses a popup (not redirect) to keep this a single async call the caller can
+// await like signIn/signUp — matches the existing store action shape.
+// Firestore user doc is created only on first sign-in; on repeat sign-ins we
+// leave the existing doc untouched so we never overwrite fields the user
+// has since edited (fullName, institution, etc.) with stale Google data.
+const googleProvider = new GoogleAuthProvider();
+
+export async function signInWithGoogle(): Promise<AuthUser> {
+  const cred = await signInWithPopup(auth, googleProvider);
+  const userRef = doc(db, 'users', cred.user.uid);
+  const existing = await getDoc(userRef);
+
+  if (!existing.exists()) {
+    await setDoc(userRef, {
+      uid:         cred.user.uid,
+      email:       cred.user.email ?? '',
+      fullName:    sanitise(cred.user.displayName ?? ''),
+      createdAt:   serverTimestamp(),
+      institution: 'POLYIBADAN',
+    });
+  }
 
   return cred.user;
 }

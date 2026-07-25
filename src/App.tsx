@@ -10,6 +10,7 @@ import InstallPrompt from './components/ui/InstallPrompt';
 import UpdateToast from './components/ui/UpdateToast';
 import SplashScreen from './pages/SplashScreen';
 import Landing from './pages/Landing';
+import WelcomeIntro from './pages/WelcomeIntro';
 import AuthScreen from './pages/AuthScreen';
 import Onboarding from './pages/Onboarding';
 
@@ -105,7 +106,8 @@ export default function App() {
         <div className="app-scroll">
           <Suspense fallback={<SplashScreen />}>
             <Routes>
-              <Route path={ROUTES.home}     element={<Landing onGetStarted={() => navigate(ROUTES.auth)} />} />
+              <Route path={ROUTES.home}     element={<Landing onGetStarted={() => navigate(ROUTES.welcome)} />} />
+              <Route path={ROUTES.welcome}  element={<WelcomeIntro />} />
               <Route path={ROUTES.about}    element={<About />} />
               <Route path={ROUTES.features} element={<Features />} />
               <Route path={ROUTES.faq}      element={<FAQ />} />

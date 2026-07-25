@@ -8,6 +8,7 @@ export const ROUTES = {
   terms: '/terms',
   support: '/support',
   auth: '/auth',
+  welcome: '/welcome',
   onboarding: '/onboarding',
   adminLogin: '/admin-login',
   notificationsAdmin: '/notificationsAdmin',
