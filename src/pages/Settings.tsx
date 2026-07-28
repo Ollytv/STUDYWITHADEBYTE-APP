@@ -13,7 +13,7 @@ import { Input, Select } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { requestNotificationPermission } from '../services/notifications';
 import { exportAllData, clearAllData } from '../services/db';
-import { uploadProfilePicture, StorageUploadError } from '../services/storage';
+import { uploadProfilePicture, StorageUploadError } from '../services/materialStorage';
 import { StudentProfile, ProgramLevel, Semester, PROGRAM_LEVEL_META, DEFAULT_PROGRAM_LEVEL, CGPA_SCALE_OPTIONS, DEFAULT_CGPA_SCALE, CgpaScale } from '../types';
 
 const DEPARTMENTS = [

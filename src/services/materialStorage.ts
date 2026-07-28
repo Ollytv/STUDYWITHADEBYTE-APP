@@ -2,13 +2,21 @@
 //
 // ── Storage abstraction for course materials ──────────────────────────────────
 //
-// All file blobs and metadata are stored in IndexedDB.
-// The UI and store never touch IndexedDB directly — they call this module only.
+// This file now has two backends living side by side:
 //
-// MIGRATION PATH:
-// When you are ready to move to Firebase Storage, implement the same interface
-// in a new file (e.g. firebaseMaterialStorage.ts) and swap the import in db.ts.
-// Zero UI changes required.
+// 1. IndexedDB (below) — the original per-device material storage
+//    (saveMaterialToIDB / getMaterialsFromIDB / deleteMaterialFromIDB /
+//    getStorageWarning / getStorageUsage). Materials.tsx's existing calls to
+//    these are unchanged.
+//
+// 2. Firebase Storage (further down, marked FIREBASE STORAGE UPLOADS) —
+//    uploadCourseMaterial / uploadProfilePicture / uploadAIAttachment and
+//    friends. These were previously in a separate storage.ts; merged in here
+//    on request so every material/attachment upload concern lives in one file.
+//
+// The two backends do not share state or names — CourseMaterialMeta.storageBackend
+// ('indexeddb' | 'firebase') is how a caller distinguishes which one produced
+// a given material record.
 //
 // DATABASE LAYOUT:
 //   DB name : 'studibyte-materials'
@@ -25,6 +33,14 @@
 //   of available disk), so we add our own guards on top.
 
 import { CourseMaterial } from '../types';
+import {
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+  deleteObject,
+  UploadTaskSnapshot,
+} from 'firebase/storage';
+import { storage } from './firebase';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const DB_NAME    = 'studibyte-materials';
@@ -371,4 +387,244 @@ export async function getStorageWarning(): Promise<string | null> {
   } catch {
     return null; // non-fatal
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FIREBASE STORAGE UPLOADS (profile pictures, course materials via Firebase,
+// and AI Study Assistant attachments) — merged in from the former storage.ts
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Limits ─────────────────────────────────────────────────────────────────
+const MAX_PROFILE_PICTURE_MB = 5;
+const MAX_COURSE_MATERIAL_MB = 25;
+
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_MATERIAL_TYPES = [...ALLOWED_IMAGE_TYPES, 'application/pdf'];
+
+// ── AI Study Assistant attachments ────────────────────────────────────────
+// Deliberately smaller than course materials: this same file is also
+// base64-encoded client-side and sent inline in the AI request body (see
+// aiChat.ts), so the cap has to account for ~33% base64 inflation plus
+// Workers' request body ceiling — 8MB keeps that comfortably under limits
+// on both ends. Exported so aiChat.ts (payload validation) and
+// AIAssistant.tsx (UI copy/validation) share one source of truth instead of
+// three copies of the same numbers drifting apart.
+export const MAX_AI_ATTACHMENT_MB = 8;
+export const ALLOWED_AI_ATTACHMENT_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
+
+export class StorageUploadError extends Error {
+  code: 'file-too-large' | 'invalid-type' | 'network-error' | 'unknown';
+  constructor(message: string, code: StorageUploadError['code']) {
+    super(message);
+    this.name = 'StorageUploadError';
+    this.code = code;
+  }
+}
+
+function validateFile(file: File, maxMB: number, allowedTypes: string[]): void {
+  if (file.size > maxMB * 1024 * 1024) {
+    throw new StorageUploadError(
+      `File is ${(file.size / 1024 / 1024).toFixed(1)} MB. Maximum allowed is ${maxMB} MB.`,
+      'file-too-large'
+    );
+  }
+  if (!allowedTypes.includes(file.type)) {
+    throw new StorageUploadError(
+      `File type "${file.type || 'unknown'}" is not allowed.`,
+      'invalid-type'
+    );
+  }
+}
+
+/** Maps a Firebase Storage error code to a user-facing message. */
+function mapStorageError(err: unknown): StorageUploadError {
+  const code = (err as { code?: string })?.code ?? '';
+  if (code === 'storage/unauthorized') {
+    return new StorageUploadError('You do not have permission to upload this file.', 'unknown');
+  }
+  if (code === 'storage/canceled') {
+    return new StorageUploadError('Upload was canceled.', 'unknown');
+  }
+  if (code === 'storage/retry-limit-exceeded' || code === 'storage/unknown') {
+    return new StorageUploadError('Network error — please check your connection and try again.', 'network-error');
+  }
+  return new StorageUploadError((err as Error)?.message ?? 'Upload failed. Please try again.', 'unknown');
+}
+
+// ── Profile picture ───────────────────────────────────────────────────────
+
+/**
+ * Uploads a user's profile picture to `users/{userId}/profile.jpg`
+ * (fixed filename — a re-upload overwrites the previous picture, so old
+ * pictures never orphan in Storage). Returns the public download URL to
+ * store on the user's profile document.
+ */
+export async function uploadProfilePicture(userId: string, file: File): Promise<string> {
+  validateFile(file, MAX_PROFILE_PICTURE_MB, ALLOWED_IMAGE_TYPES);
+
+  const storageRef = ref(storage, `users/${userId}/profile.jpg`);
+
+  try {
+    await uploadBytesResumable(storageRef, file, { contentType: file.type });
+    return await getDownloadURL(storageRef);
+  } catch (err) {
+    throw mapStorageError(err);
+  }
+}
+
+/** Deletes a user's profile picture, if one exists. Safe to call speculatively. */
+export async function deleteProfilePicture(userId: string): Promise<void> {
+  try {
+    await deleteObject(ref(storage, `users/${userId}/profile.jpg`));
+  } catch (err) {
+    // Not found is fine — nothing to delete
+    if ((err as { code?: string })?.code !== 'storage/object-not-found') {
+      console.warn('[storage] Failed to delete profile picture:', err);
+    }
+  }
+}
+
+// ── Course materials ──────────────────────────────────────────────────────
+//
+// NOTE: materials in this app are private to each student (filtered by
+// semester/academicYear on their own profile), not shared across users by
+// courseId — so this uses users/{userId}/materials/{fileName}, matching the
+// owner-only pattern the rest of the app's Firestore data already uses,
+// rather than a shared courses/{courseId}/{fileName} path that would let
+// any authenticated user read or overwrite another student's uploads.
+
+/**
+ * Uploads a course material (PDF/image) to
+ * `users/{userId}/materials/{materialId}_{fileName}`, reporting progress via
+ * onProgress (0–100). fileName is sanitized; materialId (pass your generated
+ * material id) keeps re-uploads of same-named files from colliding.
+ *
+ * Returns the download URL and the storage path (store the path too if you
+ * ever need to delete the file later — deleteObject needs the exact path).
+ */
+export async function uploadCourseMaterial(
+  userId: string,
+  materialId: string,
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<{ url: string; path: string }> {
+  validateFile(file, MAX_COURSE_MATERIAL_MB, ALLOWED_MATERIAL_TYPES);
+
+  const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+  const path = `users/${userId}/materials/${materialId}_${safeName}`;
+  const storageRef = ref(storage, path);
+
+  return new Promise((resolve, reject) => {
+    const task = uploadBytesResumable(storageRef, file, { contentType: file.type });
+
+    task.on(
+      'state_changed',
+      (snapshot: UploadTaskSnapshot) => {
+        const percent = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+        onProgress?.(percent);
+      },
+      (err) => {
+        reject(mapStorageError(err));
+      },
+      async () => {
+        try {
+          const url = await getDownloadURL(storageRef);
+          resolve({ url, path });
+        } catch (err) {
+          reject(mapStorageError(err));
+        }
+      }
+    );
+  });
+}
+
+/** Deletes a course material by its exact storage path (the `path` returned above). */
+export async function deleteCourseMaterial(path: string): Promise<void> {
+  try {
+    await deleteObject(ref(storage, path));
+  } catch (err) {
+    if ((err as { code?: string })?.code !== 'storage/object-not-found') {
+      console.warn('[storage] Failed to delete course material:', err);
+    }
+  }
+}
+
+// ── AI Study Assistant attachments ────────────────────────────────────────
+//
+// Persisted separately from course materials (users/{userId}/ai-uploads/…,
+// not users/{userId}/materials/…) so a student's AI-chat scratch uploads
+// don't clutter their curated Materials library, and so the two features
+// can evolve independent size/retention limits without cross-affecting
+// each other. Same owner-only pattern as everything else in this file.
+
+/**
+ * Uploads an AI Study Assistant attachment (image/PDF) to
+ * `users/{userId}/ai-uploads/{attachmentId}_{fileName}`, reporting progress
+ * via onProgress (0–100). Returns the download URL (for chat-history
+ * display) and storage path (for deletion).
+ */
+export async function uploadAIAttachment(
+  userId: string,
+  attachmentId: string,
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<{ url: string; path: string }> {
+  validateFile(file, MAX_AI_ATTACHMENT_MB, ALLOWED_AI_ATTACHMENT_TYPES);
+
+  const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+  const path = `users/${userId}/ai-uploads/${attachmentId}_${safeName}`;
+  const storageRef = ref(storage, path);
+
+  return new Promise((resolve, reject) => {
+    const task = uploadBytesResumable(storageRef, file, { contentType: file.type });
+
+    task.on(
+      'state_changed',
+      (snapshot: UploadTaskSnapshot) => {
+        const percent = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+        onProgress?.(percent);
+      },
+      (err) => {
+        reject(mapStorageError(err));
+      },
+      async () => {
+        try {
+          const url = await getDownloadURL(storageRef);
+          resolve({ url, path });
+        } catch (err) {
+          reject(mapStorageError(err));
+        }
+      }
+    );
+  });
+}
+
+/** Deletes an AI attachment by its exact storage path. Safe to call speculatively. */
+export async function deleteAIAttachment(path: string): Promise<void> {
+  try {
+    await deleteObject(ref(storage, path));
+  } catch (err) {
+    if ((err as { code?: string })?.code !== 'storage/object-not-found') {
+      console.warn('[storage] Failed to delete AI attachment:', err);
+    }
+  }
+}
+
+/**
+ * Reads a File as a base64 string (no data: URL prefix) for sending inline
+ * to the AI vision endpoint. Kept here rather than in aiChat.ts since it's
+ * a generic file-handling concern, not an AI-conversation concern.
+ */
+export function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Strip the "data:mime/type;base64," prefix — providers want raw base64.
+      const commaIndex = result.indexOf(',');
+      resolve(commaIndex >= 0 ? result.slice(commaIndex + 1) : result);
+    };
+    reader.onerror = () => reject(new Error('Could not read file.'));
+    reader.readAsDataURL(file);
+  });
 }

@@ -3,17 +3,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronLeft, Send, Plus, Trash2, Bot, User,
   Sparkles, RefreshCw, ChevronDown, MessageSquare,
+  Paperclip, X, FileText, AlertCircle,
+  BookOpen, HelpCircle, ListChecks, Layers, StickyNote,
 } from 'lucide-react';
 import {
   useState, useEffect, useRef, useCallback, useMemo,
 } from 'react';
 import { useStore } from '../hooks/useStore';
-import { ChatConversation, ChatMessage } from '../types';
+import { ChatConversation, ChatMessage, ChatAttachment } from '../types';
 import {
   callGemini, loadConversations, saveConversation, deleteConversation,
   createConversation, buildUpdatedConversation,
   makeUserMessage, makeAssistantMessage,
+  analyzeAttachment, validateAttachmentFile, fileFingerprint, AttachmentValidationError,
 } from '../services/aiChat';
+import { MAX_AI_ATTACHMENT_MB, ALLOWED_AI_ATTACHMENT_TYPES } from '../services/materialStorage';
 import { generateId } from '../utils/id';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../routes';
@@ -57,6 +61,22 @@ function escHtml(s: string): string {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+// ── Quick actions — shown once a file is staged, before sending ─────────────
+const QUICK_ACTIONS: { icon: React.ElementType; label: string; prompt: string }[] = [
+  { icon: BookOpen,    label: 'Summarize',        prompt: 'Summarize this document for me.' },
+  { icon: HelpCircle,  label: 'Explain',          prompt: 'Explain this in simple terms.' },
+  { icon: ListChecks,  label: 'Generate Quiz',    prompt: 'Generate 10 quiz questions from this material.' },
+  { icon: Layers,      label: 'Flashcards',       prompt: 'Create flashcards (question/answer pairs) from this material.' },
+  { icon: FileText,    label: 'Key Points',       prompt: 'Extract the key points from this material.' },
+  { icon: StickyNote,  label: 'Revision Notes',   prompt: 'Create concise revision notes from this material.' },
+];
+
 // ── Typing dots animation ─────────────────────────────────────────────────────
 function TypingDots() {
   return (
@@ -68,6 +88,28 @@ function TypingDots() {
         />
       ))}
     </div>
+  );
+}
+
+// ── Attachment chip (shown inside a message bubble) ───────────────────────────
+function AttachmentChip({ attachment }: { attachment: ChatAttachment }) {
+  return (
+    <button
+      onClick={() => window.open(attachment.storageUrl, '_blank')}
+      className="flex items-center gap-2 px-2.5 py-2 rounded-xl bg-black/20 border border-white/10 mb-2 max-w-full touch-manipulation hover:bg-black/30 transition-colors"
+    >
+      {attachment.kind === 'image' ? (
+        <img src={attachment.storageUrl} alt={attachment.name} className="w-9 h-9 rounded-lg object-cover flex-shrink-0" />
+      ) : (
+        <div className="w-9 h-9 rounded-lg bg-red-500/15 border border-red-500/25 flex items-center justify-center flex-shrink-0">
+          <FileText size={16} className="text-red-400" />
+        </div>
+      )}
+      <div className="min-w-0 text-left">
+        <p className="text-xs font-body font-semibold text-white truncate max-w-[160px]">{attachment.name}</p>
+        <p className="text-[10px] text-dark-400 font-body">{formatBytes(attachment.size)}</p>
+      </div>
+    </button>
   );
 }
 
@@ -97,6 +139,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
           ? 'bg-red-500/10 border border-red-500/20 text-red-300 rounded-tl-sm'
           : 'bg-dark-800 border border-white/8 text-dark-100 rounded-tl-sm ai-message'}`}
       >
+        {msg.attachments?.map(a => <AttachmentChip key={a.id} attachment={a} />)}
         {msg.streaming
           ? <TypingDots />
           : isUser
@@ -165,6 +208,13 @@ export default function AIAssistant() {
   const [retryMsg, setRetryMsg]           = useState<ChatMessage | null>(null);
   const [convLoading, setConvLoading]     = useState(true);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+
+  // ── Attachment state ──────────────────────────────────────────────────
+  const [stagedFile, setStagedFile]           = useState<File | null>(null);
+  const [stagedPreviewUrl, setStagedPreviewUrl] = useState<string | null>(null);
+  const [attachError, setAttachError]         = useState('');
+  const [analyzing, setAnalyzing]             = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const bottomRef  = useRef<HTMLDivElement>(null);
   const inputRef   = useRef<HTMLTextAreaElement>(null);
@@ -263,8 +313,12 @@ export default function AIAssistant() {
   // ── Send message ─────────────────────────────────────────────────────────
   const handleSend = useCallback(async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
+    const fileToSend = stagedFile;
 
     // ── Duplicate / empty guard ──────────────────────────────────────────
+    // A message requires text — quick-action chips always supply a prompt,
+    // so "attachment with no caption" isn't a supported combination; this
+    // keeps buildApiContent's content-is-never-empty assumption intact.
     if (!text || isSendingRef.current) return;
 
     // Abort any still-running request before starting a new one
@@ -276,6 +330,10 @@ export default function AIAssistant() {
     setInput('');
     setLoading(true);
     setRetryMsg(null);
+    if (fileToSend) {
+      handleRemoveStagedFile();
+      setAnalyzing(true);
+    }
 
     // ── Resolve / create conversation ────────────────────────────────────
     let conv = activeConv;
@@ -289,29 +347,78 @@ export default function AIAssistant() {
     const thisConvId = conv.id;
     inflightConvIdRef.current = thisConvId;
 
-    // ── Optimistic UI: add user message ──────────────────────────────────
-    const userMsg = makeUserMessage(text);
-    const withUser: ChatConversation = {
-      ...conv,
-      title:     conv.messages.length === 0
-        ? (text.slice(0, 60) + (text.length > 60 ? '…' : ''))
-        : conv.title,
-      messages:  [...conv.messages, userMsg],
-      updatedAt: new Date().toISOString(),
-    };
-    upsertConv(withUser);
-
-    // ── Show streaming placeholder ────────────────────────────────────────
-    const streamingMsg = makeAssistantMessage('', { streaming: true });
-    setConversations(prev =>
-      prev.map(c =>
-        c.id === thisConvId
-          ? { ...withUser, messages: [...withUser.messages, streamingMsg] }
-          : c
-      )
-    );
-
     try {
+      // ── Attachment path ──────────────────────────────────────────────
+      if (fileToSend) {
+        // Reuse a prior analysis if the exact same file was already
+        // attached earlier in this conversation — skips both the Storage
+        // re-upload and the (expensive) vision call entirely.
+        const priorAttachment = [...conv.messages].reverse()
+          .flatMap(m => m.attachments ?? [])
+          .find(a => a.fingerprint === fileFingerprint(fileToSend));
+
+        if (priorAttachment) {
+          const userMsg = makeUserMessage(text, [priorAttachment]);
+          const withUser: ChatConversation = {
+            ...conv,
+            title:     conv.messages.length === 0 ? (text.slice(0, 60) + (text.length > 60 ? '…' : '')) : conv.title,
+            messages:  [...conv.messages, userMsg],
+            updatedAt: new Date().toISOString(),
+          };
+          upsertConv(withUser);
+          setAnalyzing(false);
+
+          const streamingMsg = makeAssistantMessage('', { streaming: true });
+          setConversations(prev => prev.map(c => c.id === thisConvId ? { ...withUser, messages: [...withUser.messages, streamingMsg] } : c));
+
+          const replyText = await callGemini(withUser.messages, controller.signal);
+          if (inflightConvIdRef.current !== thisConvId) return;
+
+          const assistantMsg = makeAssistantMessage(replyText);
+          upsertConv({ ...withUser, messages: [...withUser.messages, assistantMsg] });
+          return;
+        }
+
+        // New file — one-time vision analysis. This single call both
+        // answers the user's message AND extracts reusable context; no
+        // separate callGemini round-trip needed for this turn.
+        const { attachment, displayReply } = await analyzeAttachment(fileToSend, text, conv.messages, controller.signal);
+        if (inflightConvIdRef.current !== thisConvId) return;
+
+        const userMsg = makeUserMessage(text, [attachment]);
+        const assistantMsg = makeAssistantMessage(displayReply);
+        const withBoth: ChatConversation = {
+          ...conv,
+          title:     conv.messages.length === 0 ? (text.slice(0, 60) + (text.length > 60 ? '…' : '')) : conv.title,
+          messages:  [...conv.messages, userMsg, assistantMsg],
+          updatedAt: new Date().toISOString(),
+        };
+        upsertConv(withBoth);
+        setAnalyzing(false);
+        return;
+      }
+
+      // ── Normal text-only path (unchanged) ─────────────────────────────
+      const userMsg = makeUserMessage(text);
+      const withUser: ChatConversation = {
+        ...conv,
+        title:     conv.messages.length === 0
+          ? (text.slice(0, 60) + (text.length > 60 ? '…' : ''))
+          : conv.title,
+        messages:  [...conv.messages, userMsg],
+        updatedAt: new Date().toISOString(),
+      };
+      upsertConv(withUser);
+
+      const streamingMsg = makeAssistantMessage('', { streaming: true });
+      setConversations(prev =>
+        prev.map(c =>
+          c.id === thisConvId
+            ? { ...withUser, messages: [...withUser.messages, streamingMsg] }
+            : c
+        )
+      );
+
       // callGemini handles retries + timeout internally; pass abort signal
       const replyText = await callGemini(withUser.messages, controller.signal);
 
@@ -334,34 +441,77 @@ export default function AIAssistant() {
       }
 
       if (import.meta.env.DEV) {
-        console.error('[AIAssistant] callGemini failed after all retries:', err);
+        console.error('[AIAssistant] send failed after all retries:', err);
       }
 
       // Race-condition guard
       if (inflightConvIdRef.current !== thisConvId) return;
 
+      const userMsgForRetry = makeUserMessage(text);
       const errMsg = makeAssistantMessage(
         err?.message || 'Something went wrong. Please try again.',
         { error: true }
       );
-      // Remove streaming placeholder, add error message
-      const withError: ChatConversation = {
-        ...withUser,
-        messages: [...withUser.messages, errMsg],
-      };
-      upsertConv(withError);
-      setRetryMsg(userMsg);
+      // Attach the error to whatever conversation state currently exists —
+      // read fresh from state rather than a possibly-stale `conv` closure,
+      // since the attachment path may have already upserted a user message.
+      setConversations(prev => {
+        const current = prev.find(c => c.id === thisConvId);
+        const base = current ?? conv!;
+        const withError: ChatConversation = {
+          ...base,
+          messages: [...base.messages, errMsg],
+        };
+        saveConversation(withError);
+        return prev.map(c => c.id === thisConvId ? withError : c);
+      });
+      // Retry only makes sense for text-only failures — an attachment
+      // failure has already cleared the staged file, so "retry" would
+      // silently resend as plain text and confuse what went wrong.
+      if (!fileToSend) setRetryMsg(userMsgForRetry);
 
     } finally {
       // Always reset loading — even if an exception was swallowed above
       isSendingRef.current = false;
       setLoading(false);
+      setAnalyzing(false);
 
       if (inflightConvIdRef.current === thisConvId) {
         inflightConvIdRef.current = null;
       }
     }
-  }, [activeConv, input, upsertConv]);
+  }, [activeConv, input, stagedFile, upsertConv]);
+
+
+  // ── Attachment select / remove ────────────────────────────────────────────
+  const handleFileSelect = (file: File) => {
+    setAttachError('');
+    try {
+      validateAttachmentFile(file);
+    } catch (err: any) {
+      setAttachError(err instanceof AttachmentValidationError ? err.message : 'Could not use this file.');
+      return;
+    }
+
+    // Revoke any previous preview URL before creating a new one
+    if (stagedPreviewUrl) URL.revokeObjectURL(stagedPreviewUrl);
+
+    setStagedFile(file);
+    setStagedPreviewUrl(file.type.startsWith('image/') ? URL.createObjectURL(file) : null);
+  };
+
+  const handleRemoveStagedFile = () => {
+    if (stagedPreviewUrl) URL.revokeObjectURL(stagedPreviewUrl);
+    setStagedFile(null);
+    setStagedPreviewUrl(null);
+    setAttachError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Clean up any outstanding object URL on unmount
+  useEffect(() => {
+    return () => { if (stagedPreviewUrl) URL.revokeObjectURL(stagedPreviewUrl); };
+  }, [stagedPreviewUrl]);
 
   // ── Retry last failed message ────────────────────────────────────────────
   const handleRetry = useCallback(() => {
@@ -587,16 +737,86 @@ export default function AIAssistant() {
         className="fixed bottom-0 left-0 right-0 z-20 px-4 bg-dark-950 border-t border-white/5"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 12px)', paddingTop: '10px' }}
       >
+        {/* Staged file preview + quick actions */}
+        <AnimatePresence>
+          {stagedFile && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden mb-2"
+            >
+              <div className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-dark-800 border border-white/10 mb-2">
+                {stagedPreviewUrl ? (
+                  <img src={stagedPreviewUrl} alt={stagedFile.name} className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/25 flex items-center justify-center flex-shrink-0">
+                    <FileText size={18} className="text-red-400" />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-body font-semibold text-white truncate">{stagedFile.name}</p>
+                  <p className="text-[10px] text-dark-500 font-body">{formatBytes(stagedFile.size)}</p>
+                </div>
+                <button
+                  onClick={handleRemoveStagedFile}
+                  disabled={loading || analyzing}
+                  className="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500/15 flex items-center justify-center text-dark-400 hover:text-red-400 transition-colors flex-shrink-0 touch-manipulation disabled:opacity-50"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* Quick actions — tapping one sends immediately with this file */}
+              <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
+                {QUICK_ACTIONS.map(({ icon: Icon, label, prompt }) => (
+                  <button
+                    key={label}
+                    onClick={() => handleSend(prompt)}
+                    disabled={loading || analyzing}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-dark-800 border border-white/8 text-xs text-dark-300 hover:text-white hover:border-purple-500/30 transition-all font-body whitespace-nowrap flex-shrink-0 touch-manipulation disabled:opacity-50"
+                  >
+                    <Icon size={12} className="text-purple-400" /> {label}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {attachError && (
+          <div className="flex items-center gap-1.5 mb-2 px-1">
+            <AlertCircle size={11} className="text-red-400 flex-shrink-0" />
+            <p className="text-[10px] text-red-400 font-body">{attachError}</p>
+          </div>
+        )}
+
         <div className="flex items-end gap-2 max-w-full">
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept={ALLOWED_AI_ATTACHMENT_TYPES.join(',')}
+            onChange={e => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loading || analyzing || !!stagedFile}
+            title={`Attach an image or PDF (max ${MAX_AI_ATTACHMENT_MB}MB)`}
+            className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 bg-dark-800 border border-white/10 text-dark-400 hover:text-white transition-colors disabled:opacity-40 touch-manipulation"
+          >
+            <Paperclip size={17} />
+          </button>
+
           <div className="flex-1 relative min-w-0">
             <textarea
               ref={inputRef}
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder="Ask anything about your studies…"
+              placeholder={stagedFile ? 'Ask about this file…' : 'Ask anything about your studies…'}
               rows={1}
-              disabled={loading}
+              disabled={loading || analyzing}
               className="w-full max-w-full bg-dark-800 border border-white/10 rounded-2xl text-white font-body
                          text-sm px-4 py-3 pr-4 resize-none focus:outline-none
                          focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500/40
@@ -606,18 +826,18 @@ export default function AIAssistant() {
           </div>
           <motion.button
             onClick={() => handleSend()}
-            disabled={!input.trim() || loading}
+            disabled={!input.trim() || loading || analyzing}
             className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all
                        disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
-              background: !input.trim() || loading
+              background: !input.trim() || loading || analyzing
                 ? 'rgba(255,255,255,0.06)'
                 : 'linear-gradient(135deg, #a855f7, #7c3aed)',
               border: '1px solid rgba(168,85,247,0.3)',
             }}
-            whileTap={!input.trim() || loading ? {} : { scale: 0.92 }}
+            whileTap={!input.trim() || loading || analyzing ? {} : { scale: 0.92 }}
           >
-            {loading
+            {loading || analyzing
               ? <motion.div
                   className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
                   animate={{ rotate: 360 }}
@@ -628,7 +848,7 @@ export default function AIAssistant() {
           </motion.button>
         </div>
         <p className="text-[10px] text-dark-600 text-center mt-2 font-body">
-          Shift+Enter for new line · Enter to send
+          {analyzing ? 'Analyzing attachment…' : 'Shift+Enter for new line · Enter to send'}
         </p>
       </div>
     </div>

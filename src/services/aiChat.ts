@@ -11,8 +11,9 @@ import {
   deleteDoc, query, orderBy, serverTimestamp, Timestamp,
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
-import { ChatConversation, ChatMessage } from '../types';
+import { ChatConversation, ChatMessage, ChatAttachment } from '../types';
 import { generateId } from '../utils/id';
+import { uploadAIAttachment, fileToBase64, MAX_AI_ATTACHMENT_MB, ALLOWED_AI_ATTACHMENT_TYPES } from './materialStorage';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,9 @@ const AI_CHAT_ENDPOINT = '/api/ai-chat';
 
 /** Gateway may try up to 4 providers server-side — give it room before we time out client-side. */
 const REQUEST_TIMEOUT_MS = 20_000;
+
+/** Vision requests may try 2 providers sequentially server-side (15s timeout each) — needs more headroom than plain text. */
+const VISION_REQUEST_TIMEOUT_MS = 35_000;
 
 /** HTTP status codes that warrant an automatic retry. */
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
@@ -95,12 +99,14 @@ function friendlyError(status: number, serverMessage?: string): string {
 async function attemptAICall(
   payload: { role: 'user' | 'assistant'; content: string }[],
   signal: AbortSignal,
+  attachment?: { mimeType: string; dataBase64: string },
+  timeoutMs: number = REQUEST_TIMEOUT_MS,
 ): Promise<string> {
   // Per-attempt timeout — independent of the outer abort signal
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(
     () => timeoutController.abort(),
-    REQUEST_TIMEOUT_MS,
+    timeoutMs,
   );
 
   // Combine caller's abort signal with the timeout signal
@@ -126,7 +132,7 @@ async function attemptAICall(
         'Content-Type':  'application/json',
         Authorization:   `Bearer ${idToken}`,
       },
-      body:    JSON.stringify({ messages: payload }),
+      body:    JSON.stringify(attachment ? { messages: payload, attachment } : { messages: payload }),
       signal:  combinedSignal,
     });
   } catch (err: any) {
@@ -186,6 +192,23 @@ async function attemptAICall(
 // ── AI gateway call (public API) ──────────────────────────────────────────────
 
 /**
+ * Builds the text actually sent to the gateway for a message. If the message
+ * has an attachment with cached extractedText (set once, right after the
+ * original vision analysis — see analyzeAttachment), that context is
+ * embedded here so every later turn in the conversation can answer
+ * follow-up questions about the same material via the cheap, fully
+ * fallback-capable text pipeline — without re-uploading the file or
+ * re-running vision analysis. The chat bubble UI never renders this
+ * embedded block; it only ever displays `msg.content` as typed by the user.
+ */
+function buildApiContent(msg: ChatMessage): string {
+  const attachment = msg.attachments?.[0];
+  if (!attachment?.extractedText) return msg.content;
+
+  return `${msg.content}\n\n[Attached ${attachment.kind}: ${attachment.name}]\n${attachment.extractedText}`;
+}
+
+/**
  * Send the full conversation history to the AI gateway and get the
  * assistant's reply text back.
  *
@@ -230,7 +253,7 @@ export async function callGemini(
   // no per-provider format conversion needed client-side anymore.
   const payload = validMessages.map(m => ({
     role:    m.role as 'user' | 'assistant',
-    content: m.content,
+    content: buildApiContent(m),
   }));
 
   // ── 3. Retry loop ──────────────────────────────────────────────────────────
@@ -392,12 +415,13 @@ export function buildUpdatedConversation(
   };
 }
 
-export function makeUserMessage(text: string): ChatMessage {
+export function makeUserMessage(text: string, attachments?: ChatAttachment[]): ChatMessage {
   return {
     id:        generateId(),
     role:      'user',
     content:   text.trim(),
     createdAt: new Date().toISOString(),
+    ...(attachments && attachments.length > 0 ? { attachments } : {}),
   };
 }
 
@@ -416,4 +440,110 @@ export function makeAssistantMessage(
     ...(opts?.streaming ? { streaming: true } : {}),
     ...(opts?.error ? { error: true } : {}),
   };
+}
+
+// ── Attachments ────────────────────────────────────────────────────────────
+
+/** Max chars of extracted material context kept per attachment — bounds the
+ * size of every future turn's payload regardless of how long the source
+ * document is (a 40-page PDF doesn't balloon every follow-up question). */
+const MAX_EXTRACTED_TEXT_CHARS = 6_000;
+
+const MATERIAL_CONTEXT_DELIMITER = '---MATERIAL CONTEXT---';
+
+export class AttachmentValidationError extends Error {}
+
+/** Client-side validation — UX convenience only; the server re-validates independently. */
+export function validateAttachmentFile(file: File): void {
+  if (!ALLOWED_AI_ATTACHMENT_TYPES.includes(file.type)) {
+    throw new AttachmentValidationError('Only JPG, PNG, WEBP, and PDF files are supported.');
+  }
+  if (file.size > MAX_AI_ATTACHMENT_MB * 1024 * 1024) {
+    throw new AttachmentValidationError(`File is too large. Maximum size is ${MAX_AI_ATTACHMENT_MB}MB.`);
+  }
+}
+
+function attachmentKindFromMime(mimeType: string): 'image' | 'pdf' {
+  return mimeType === 'application/pdf' ? 'pdf' : 'image';
+}
+
+/**
+ * Cheap content fingerprint (name + size + lastModified) — enough to detect
+ * "the user re-attached the exact same file" without hashing bytes, so a
+ * duplicate re-upload in the same conversation can reuse cached extraction
+ * instead of paying for a second vision call.
+ */
+export function fileFingerprint(file: File): string {
+  return `${file.name}:${file.size}:${file.lastModified}`;
+}
+
+/**
+ * Runs one vision analysis call for a newly attached file: uploads it to
+ * Storage (for persistent chat-history display), sends it inline as base64
+ * to the vision-only gateway path, and splits the response into the
+ * user-visible answer and a cached plain-text extraction (bounded to
+ * MAX_EXTRACTED_TEXT_CHARS) for reuse by later follow-up questions in the
+ * same conversation — see buildApiContent.
+ *
+ * This is the ONLY vision call for a given attachment — every subsequent
+ * question about it goes through the cheap, fully fallback-capable text
+ * pipeline (callGemini) instead.
+ */
+export async function analyzeAttachment(
+  file: File,
+  userText: string,
+  priorMessages: ChatMessage[],
+  externalSignal?: AbortSignal,
+): Promise<{ attachment: ChatAttachment; displayReply: string }> {
+  validateAttachmentFile(file);
+
+  const uid = auth.currentUser?.uid;
+  if (!uid) throw new Error('You must be signed in to attach files.');
+
+  const attachmentId = generateId();
+  const kind = attachmentKindFromMime(file.type);
+
+  // Upload and base64-encode in parallel — the upload is for chat-history
+  // display/persistence only; the vision call uses the base64 copy directly
+  // and does not wait on or depend on the Storage URL.
+  const [{ url: storageUrl }, dataBase64] = await Promise.all([
+    uploadAIAttachment(uid, attachmentId, file),
+    fileToBase64(file),
+  ]);
+
+  const payload = [...priorMessages.filter(m => !m.error && !m.streaming), makeUserMessage(userText || 'Analyze this file.')]
+    .map(m => ({ role: m.role as 'user' | 'assistant', content: buildApiContent(m) }));
+
+  let rawText: string;
+  try {
+    rawText = await attemptAICall(
+      payload,
+      externalSignal ?? new AbortController().signal,
+      { mimeType: file.type, dataBase64 },
+      VISION_REQUEST_TIMEOUT_MS,
+    );
+  } catch (err: any) {
+    if (err instanceof AIRequestError) throw new Error(err.message);
+    throw new Error(err?.message ?? 'Could not analyze the attachment. Please try again.');
+  }
+
+  const delimiterIndex = rawText.indexOf(MATERIAL_CONTEXT_DELIMITER);
+  const displayReply = (delimiterIndex >= 0 ? rawText.slice(0, delimiterIndex) : rawText).trim();
+  const extractedText = (delimiterIndex >= 0 ? rawText.slice(delimiterIndex + MATERIAL_CONTEXT_DELIMITER.length) : rawText)
+    .trim()
+    .slice(0, MAX_EXTRACTED_TEXT_CHARS);
+
+  const attachment: ChatAttachment = {
+    id:           attachmentId,
+    name:         file.name,
+    mimeType:     file.type,
+    size:         file.size,
+    kind,
+    storageUrl,
+    extractedText,
+    fingerprint:  fileFingerprint(file),
+    createdAt:    new Date().toISOString(),
+  };
+
+  return { attachment, displayReply };
 }

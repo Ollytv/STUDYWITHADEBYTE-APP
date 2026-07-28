@@ -4,7 +4,7 @@
 // once in place, and falls back to the next provider on any failure.
 // Only throws once every provider (including its retry) has failed.
 
-import { AIProvider, ChatMessage, Env, GenerateResult, ProviderError, ProviderName } from './types';
+import { AIProvider, Attachment, ChatMessage, Env, GenerateResult, ProviderError, ProviderName } from './types';
 import { geminiProvider } from './providers/gemini';
 import { groqProvider } from './providers/groq';
 import { deepseekProvider } from './providers/deepseek';
@@ -19,6 +19,12 @@ const PROVIDERS: Record<ProviderName, AIProvider> = {
 };
 
 const PROVIDER_ORDER: ProviderName[] = ['gemini', 'groq', 'deepseek', 'openrouter'];
+
+// Vision fallback chain is intentionally narrower than the text chain —
+// only providers that can actually read an attached image/PDF belong here.
+// Groq/DeepSeek are text-only in this project's configured models (see
+// wrangler.toml), so they're never tried for attachment requests.
+const VISION_PROVIDER_ORDER: ProviderName[] = ['gemini', 'openrouter'];
 
 // One same-provider retry after a short backoff for transient errors only
 // (429 / timeout / 5xx / network). Kept short — latency budget matters more
@@ -70,6 +76,49 @@ export async function routeGenerateResponse(messages: ChatMessage[], env: Env): 
   }
 
   throw lastError ?? new ProviderError('All AI providers are unavailable', 'openrouter', false);
+}
+
+/**
+ * Vision-capable path: tries Gemini (native image+PDF support), then falls
+ * back to OpenRouter for images only (see openrouter.ts — it throws
+ * immediately for PDFs rather than mangling the request). No same-provider
+ * retry here — vision calls are already slow and expensive; on failure we'd
+ * rather move to the next provider than double a costly request.
+ */
+export async function routeGenerateVisionResponse(
+  messages: ChatMessage[],
+  attachment: Attachment,
+  env: Env,
+): Promise<GenerateResult> {
+  let lastError: ProviderError | null = null;
+  let fallbackCount = 0;
+
+  for (const name of VISION_PROVIDER_ORDER) {
+    const provider = PROVIDERS[name];
+    if (!provider.generateVisionResponse) continue;
+    if (isSkippable(name)) {
+      console.log(`[router] skipping ${name} for vision — circuit open`);
+      fallbackCount += 1;
+      continue;
+    }
+
+    const start = Date.now();
+    try {
+      const text = await provider.generateVisionResponse(messages, attachment, env);
+      const latencyMs = Date.now() - start;
+      recordSuccess(name, latencyMs);
+      console.log(`[router] vision success provider=${name} latencyMs=${latencyMs} fallbackCount=${fallbackCount}`);
+      return { text, provider: name, latencyMs, fallbackCount };
+    } catch (err) {
+      const perr = err instanceof ProviderError ? err : new ProviderError(String(err), name, true);
+      recordFailure(name);
+      console.error(`[router] vision provider=${name} failed: ${perr.message}`);
+      lastError = perr;
+      fallbackCount += 1;
+    }
+  }
+
+  throw lastError ?? new ProviderError('No vision-capable AI providers are available', 'gemini', false);
 }
 
 export async function routeGenerateTitle(firstMessage: string, env: Env): Promise<string> {

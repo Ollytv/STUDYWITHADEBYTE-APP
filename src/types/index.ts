@@ -207,6 +207,26 @@ export interface AppSettings {
 
 export type ChatRole = 'user' | 'assistant';
 
+export interface ChatAttachment {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  kind: 'image' | 'pdf';
+  /** Firebase Storage download URL — for displaying/opening the file in chat history. */
+  storageUrl: string;
+  /**
+   * Plain-text extraction from the one-time vision analysis call, capped to
+   * ~6000 chars. Embedded into this message's outgoing API content on every
+   * later turn (see aiChat.ts's buildApiContent) so follow-up questions
+   * reuse it instead of re-analyzing the file.
+   */
+  extractedText: string;
+  /** name:size:lastModified — cheap re-upload dedup check, not a content hash. */
+  fingerprint: string;
+  createdAt: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: ChatRole;
@@ -216,6 +236,7 @@ export interface ChatMessage {
   streaming?: boolean;
   /** set if this message failed to send */
   error?: boolean;
+  attachments?: ChatAttachment[];
 }
 
 export interface ChatConversation {

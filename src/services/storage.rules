@@ -1,0 +1,52 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Avatar uploads ─────────────────────────────────────────────────────
+    // Owner-only read/write. Max 5MB. Images only.
+    // Path matches materialStorage.ts: users/{userId}/profile.jpg
+    match /users/{userId}/profile.jpg {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null
+                   && request.auth.uid == userId
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── Course materials ───────────────────────────────────────────────────
+    // Owner-only read/write. Max 25MB (matches MAX_COURSE_MATERIAL_MB in
+    // materialStorage.ts — was 20MB here, out of sync with the client check).
+    // MIME allowlist: PDF and images only. No executables, scripts, or archives.
+    // Path matches materialStorage.ts: users/{userId}/materials/{materialId}_{fileName}
+    match /users/{userId}/materials/{materialId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null
+                   && request.auth.uid == userId
+                   && request.resource.size < 25 * 1024 * 1024
+                   && (request.resource.contentType == 'application/pdf'
+                       || request.resource.contentType.matches('image/.*'));
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── AI Study Assistant attachments ─────────────────────────────────────
+    // Owner-only read/write. Max 8MB (matches MAX_AI_ATTACHMENT_MB).
+    // MIME allowlist: PDF and images only — same pattern as course materials,
+    // kept as a separate path so the two features can evolve independently.
+    // Path matches materialStorage.ts: users/{userId}/ai-uploads/{attachmentId}_{fileName}
+    match /users/{userId}/ai-uploads/{attachmentId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null
+                   && request.auth.uid == userId
+                   && request.resource.size < 8 * 1024 * 1024
+                   && (request.resource.contentType == 'application/pdf'
+                       || request.resource.contentType.matches('image/.*'));
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── Default deny — blocks all other paths ──────────────────────────────
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

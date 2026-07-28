@@ -4,10 +4,11 @@
 // SDK — it targets Node, not the Workers runtime) so it runs natively on
 // Cloudflare's edge fetch().
 
-import { AIProvider, ChatMessage, Env, ProviderError } from '../types';
-import { SYSTEM_INSTRUCTION, withTimeout, PROVIDER_TIMEOUT_MS } from './base';
+import { Attachment, AIProvider, ChatMessage, Env, ProviderError } from '../types';
+import { SYSTEM_INSTRUCTION, VISION_CONTEXT_INSTRUCTION, withTimeout, PROVIDER_TIMEOUT_MS, VISION_PROVIDER_TIMEOUT_MS } from './base';
 
-interface GeminiPart { text: string }
+interface GeminiInlineData { mimeType: string; data: string }
+interface GeminiPart { text?: string; inlineData?: GeminiInlineData }
 interface GeminiContent { role: 'user' | 'model'; parts: GeminiPart[] }
 
 function toGeminiContents(messages: ChatMessage[]): GeminiContent[] {
@@ -17,7 +18,20 @@ function toGeminiContents(messages: ChatMessage[]): GeminiContent[] {
   }));
 }
 
-async function call(model: string, apiKey: string, contents: GeminiContent[]): Promise<string> {
+/** Same as toGeminiContents, but the final user turn also carries the attachment as inlineData. */
+function toGeminiContentsWithAttachment(messages: ChatMessage[], attachment: Attachment): GeminiContent[] {
+  const contents = toGeminiContents(messages);
+  const last = contents[contents.length - 1];
+  last.parts.push({ inlineData: { mimeType: attachment.mimeType, data: attachment.dataBase64 } });
+  return contents;
+}
+
+async function call(
+  model: string,
+  apiKey: string,
+  contents: GeminiContent[],
+  systemInstruction: string = SYSTEM_INSTRUCTION,
+): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   let response: Response;
@@ -27,7 +41,7 @@ async function call(model: string, apiKey: string, contents: GeminiContent[]): P
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents,
-        systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+        systemInstruction: { parts: [{ text: systemInstruction }] },
         generationConfig: {
           temperature: 0.7,
           topK: 40,
@@ -54,7 +68,7 @@ async function call(model: string, apiKey: string, contents: GeminiContent[]): P
     throw new ProviderError(`gemini returned ${status}`, 'gemini', status === 429 || status >= 500, status);
   }
 
-  const data = await response.json<any>();
+  const data = (await response.json()) as any;
   const text: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
   if (!text || text.trim() === '') {
@@ -81,6 +95,22 @@ export const geminiProvider: AIProvider = {
     return withTimeout(
       call(env.GEMINI_MODEL, env.GEMINI_API_KEY, [{ role: 'user', parts: [{ text: prompt }] }]),
       PROVIDER_TIMEOUT_MS,
+      'gemini',
+    );
+  },
+
+  // Native multimodal — Gemini accepts images AND PDFs as inlineData directly,
+  // no separate OCR/extraction step needed.
+  generateVisionResponse(messages: ChatMessage[], attachment: Attachment, env: Env): Promise<string> {
+    if (!env.GEMINI_API_KEY) throw new ProviderError('gemini not configured', 'gemini', false);
+    return withTimeout(
+      call(
+        env.GEMINI_MODEL,
+        env.GEMINI_API_KEY,
+        toGeminiContentsWithAttachment(messages, attachment),
+        SYSTEM_INSTRUCTION + '\n' + VISION_CONTEXT_INSTRUCTION,
+      ),
+      VISION_PROVIDER_TIMEOUT_MS,
       'gemini',
     );
   },
