@@ -555,7 +555,7 @@ Q: Is my data secure?
 A: Yes. All data is secured using Firebase with encrypted connections and strict security rules. Only you can access your data.`;
 
   return (
-    <div className="min-h-screen bg-dark-950 pb-36 overflow-x-hidden">
+    <div className="min-h-screen bg-dark-950 pb-36">
 
       {/* ── STICKY HEADER ───────────────────────────────────────────────── */}
       <div className="sticky top-0 z-30 backdrop-blur-2xl" style={{ background: 'rgba(10,10,15,0.92)' }}>
@@ -578,7 +578,7 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
       </div>
       </div>
 
-      <div className="px-5 space-y-4">
+      <div className="px-5 space-y-4 overflow-x-hidden">
 
         {/* ── PROFILE CARD ── */}
         <motion.button onClick={openProfile}

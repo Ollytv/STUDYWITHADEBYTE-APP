@@ -620,7 +620,10 @@ export default function AIAssistant() {
       </AnimatePresence>
 
       {/* ── HEADER ──────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-4 pt-14 pb-3 border-b border-white/5 shrink-0">
+      <div
+        className="sticky top-0 z-20 flex items-center justify-between px-4 pt-14 pb-3 border-b border-white/5 shrink-0 backdrop-blur-2xl"
+        style={{ background: 'rgba(10,10,15,0.92)' }}
+      >
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(ROUTES.app.more)}

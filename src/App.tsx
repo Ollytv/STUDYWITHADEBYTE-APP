@@ -15,8 +15,6 @@ import AuthScreen from './pages/AuthScreen';
 import Onboarding from './pages/Onboarding';
 
 // ── Lazy-loaded routes ────────────────────────────────────────────────────
-// Kept eager: SplashScreen (Suspense fallback), Landing (SEO first paint),
-// AuthScreen/Onboarding (critical path right after auth, no spinner wanted).
 const Dashboard   = lazy(() => import('./pages/Dashboard'));
 const Timetable   = lazy(() => import('./pages/Timetable'));
 const Attendance  = lazy(() => import('./pages/Attendance'));
@@ -39,6 +37,8 @@ const Contact  = lazy(() => import('./pages/public/PublicPages').then(m => ({ de
 const Privacy  = lazy(() => import('./pages/public/PublicPages').then(m => ({ default: m.Privacy })));
 const Terms    = lazy(() => import('./pages/public/PublicPages').then(m => ({ default: m.Terms })));
 const Support  = lazy(() => import('./pages/public/PublicPages').then(m => ({ default: m.Support })));
+const Guides       = lazy(() => import('./pages/public/Guides'));
+const GuideDetail  = lazy(() => import('./pages/public/GuideDetail'));
 
 // Admin — separate from the student auth/onboarding flow entirely.
 const AdminLogin        = lazy(() => import('./pages/admin/AdminLogin'));
@@ -74,9 +74,6 @@ export default function App() {
   }
 
   // ── Gate 1.5: Admin routes — entirely independent of student auth state ──
-  // Admin login/authorization uses the same Firebase Auth project (see
-  // useAdminAuth) but never touches currentUser/hasProfile/onboarding, so an
-  // admin account doesn't need a student profile document to sign in here.
   if (ADMIN_PATHS.includes(location.pathname)) {
     return (
       <div className="dark bg-dark-950 app-shell">
@@ -115,17 +112,13 @@ export default function App() {
               <Route path={ROUTES.privacy}  element={<Privacy />} />
               <Route path={ROUTES.terms}    element={<Terms />} />
               <Route path={ROUTES.support}  element={<Support />} />
+              <Route path={ROUTES.guides}      element={<Guides />} />
+              <Route path={ROUTES.guideDetail} element={<GuideDetail />} />
               <Route path={ROUTES.auth}     element={<AuthScreen />} />
               <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
             </Routes>
           </Suspense>
         </div>
-        {/* No InstallPrompt here — this branch renders your public/SEO
-            marketing pages (Landing, About, guides, etc). A full-screen
-            modal on first paint here is an "intrusive interstitial" for
-            both Googlebot and real search visitors, and can read as
-            blocked/low-value content during an AdSense review. The prompt
-            only makes sense once someone has already signed up. */}
         <UpdateToast />
       </div>
     );
@@ -148,8 +141,6 @@ export default function App() {
   }
 
   // ── Gate 4: Fully authenticated → App shell ────────────────────────────
-  // Ignore public paths, /auth, /onboarding once fully set up — go to /app.
- // location already drives the <Routes> below via router context
   return (
     <Routes>
       <Route path={`${ROUTES.app.root}/*`} element={<MainApp />} />
@@ -167,16 +158,10 @@ function MainApp() {
 
   return (
     <div className={`app-shell bg-dark-950 ${settings?.theme === 'dark' ? 'dark' : ''}`}>
-      {/* ── Static layer — grounded, never part of the scroll tree ────────── */}
       <NotificationAlert visible={alert.visible} payload={alert.payload} onDismiss={dismissAlert} />
       <InstallPrompt />
       <UpdateToast />
 
-      {/* ── The ONE real scroll surface for every page. Individual pages
-             (e.g. Materials.tsx) may wrap their own inner lists in
-             <PullToRefresh> for the pull gesture — that never adds a
-             second overflow:auto container, it just reads scroll position
-             from this element. ─────────────────────────────────────────── */}
       <div className={`app-scroll${showBottomNav ? ' has-bottom-nav' : ''}`}>
         <Suspense fallback={<SplashScreen />}>
           <Routes>
@@ -199,7 +184,6 @@ function MainApp() {
         </Suspense>
       </div>
 
-      {/* ── Static layer — grounded, never shifts during scroll/pull ─────── */}
       {showBottomNav && <BottomNav />}
     </div>
   );

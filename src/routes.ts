@@ -7,6 +7,8 @@ export const ROUTES = {
   privacy: '/privacy',
   terms: '/terms',
   support: '/support',
+  guides: '/guides',
+  guideDetail: '/guides/:slug',
   auth: '/auth',
   welcome: '/welcome',
   onboarding: '/onboarding',
@@ -32,6 +34,7 @@ export const ROUTES = {
 export const PUBLIC_PATHS: string[] = [
   ROUTES.home, ROUTES.about, ROUTES.features, ROUTES.faq,
   ROUTES.contact, ROUTES.privacy, ROUTES.terms, ROUTES.support,
+  ROUTES.guides,
 ];
 
 export const INNER_APP_PATHS: string[] = [
