@@ -12,6 +12,7 @@ import { routeGenerateResponse, routeGenerateVisionResponse } from './_lib/route
 import { verifyFirebaseToken, AuthError } from './_lib/auth';
 import { checkRateLimit, checkVisionRateLimit, RateLimitError } from './_lib/rateLimit';
 
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',

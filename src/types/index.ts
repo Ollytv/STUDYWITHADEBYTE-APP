@@ -158,6 +158,7 @@ export interface StudySession {
   duration: number; // minutes
   type: 'study' | 'break';
   courseCode?: string;
+  goal?: string; // ADD THIS LINE — session-specific goal, e.g. "Chapter 4 — Integration Problems"
 }
 
 export interface CourseMaterial {

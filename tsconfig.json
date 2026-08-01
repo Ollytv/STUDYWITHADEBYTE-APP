@@ -16,7 +16,9 @@
     "resolveJsonModule": true,
     "sourceMap": true,
     "esModuleInterop": true
+    
   },
+  "exclude": ["functions"],
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

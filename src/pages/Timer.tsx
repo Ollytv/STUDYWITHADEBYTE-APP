@@ -3,6 +3,10 @@ import { Play, Pause, RotateCcw, Coffee, Brain, BarChart2, ChevronLeft } from 'l
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useStore } from '../hooks/useStore';
 import { ProgressRing } from '../components/ui/ProgressRing';
+import { SubjectGoalCard } from '../components/timer/SubjectGoalCard';
+import { QuickTools } from '../components/timer/QuickTools';
+import { QuickNoteModal } from '../components/timer/QuickNoteModal';
+import { generateId } from '../utils/id';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../routes';
 
@@ -15,7 +19,14 @@ const PRESETS = [
 ];
 
 export default function Timer() {
- const { studySessions, addStudySession } = useStore();
+  const {
+    studySessions,
+    addStudySession,
+    classes,
+    addMaterial,
+    activeSemester,
+    activeAcademicYear,
+  } = useStore();
   const navigate = useNavigate();
 
   const [preset, setPreset]   = useState(0);
@@ -23,6 +34,10 @@ export default function Timer() {
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [sessions, setSessions] = useState(0);
+
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [sessionGoal, setSessionGoal] = useState('');
+  const [showNoteModal, setShowNoteModal] = useState(false);
 
   const intervalRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioCtxRef  = useRef<AudioContext | null>(null);
@@ -32,6 +47,11 @@ export default function Timer() {
   const totalSecs = (mode === 'study' ? studyMins : breakMins) * 60;
   const remaining = totalSecs - elapsed;
   const percentage = Math.round((elapsed / totalSecs) * 100);
+
+  const selectedClass = useMemo(
+    () => classes.find(c => c.id === selectedClassId) ?? null,
+    [classes, selectedClassId]
+  );
 
   const playBeep = useCallback(() => {
     try {
@@ -54,7 +74,13 @@ export default function Timer() {
           if (e + 1 >= totalSecs) {
             playBeep();
             if (mode === 'study') {
-              addStudySession({ date: new Date().toISOString().split('T')[0], duration: studyMins, type: 'study' });
+              addStudySession({
+                date: new Date().toISOString().split('T')[0],
+                duration: studyMins,
+                type: 'study',
+                courseCode: selectedClass?.courseCode,
+                goal: sessionGoal.trim() || undefined,
+              });
               setSessions(s => s + 1);
               setMode('break');
             } else {
@@ -70,13 +96,27 @@ export default function Timer() {
       if (intervalRef.current) clearInterval(intervalRef.current);
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [running, totalSecs, mode, studyMins, playBeep, addStudySession]);
+  }, [running, totalSecs, mode, studyMins, playBeep, addStudySession, selectedClass, sessionGoal]);
 
   const reset  = () => { setRunning(false); setElapsed(0); setMode('study'); };
   const toggle = () => setRunning(r => !r);
   const fmt    = (s: number) => {
     const m = Math.floor(s / 60), sec = s % 60;
     return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  };
+
+  const handleSaveNote = (text: string) => {
+    addMaterial({
+      id: generateId(),
+      name: sessionGoal.trim() || 'Quick Note',
+      courseCode: selectedClass?.courseCode ?? 'GENERAL',
+      courseName: selectedClass?.courseName ?? 'General',
+      type: 'note',
+      content: text,
+      semester: activeSemester,
+      academicYear: activeAcademicYear,
+      createdAt: new Date().toISOString(),
+    });
   };
 
   const todayStudy = useMemo(() => {
@@ -111,6 +151,16 @@ export default function Timer() {
       </div>
       </div>
 
+      {/* Subject & Session Goal */}
+      <SubjectGoalCard
+        classes={classes}
+        selectedClassId={selectedClassId}
+        goal={sessionGoal}
+        onSelectClass={setSelectedClassId}
+        onGoalChange={setSessionGoal}
+        disabled={running}
+      />
+
       {/* Mode indicator */}
       <div className="flex items-center justify-center gap-3 mb-6 px-4">
         <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl border transition-all ${mode === 'study' ? 'bg-green-500/15 border-green-500/30 text-green-400' : 'bg-dark-800 border-white/5 text-dark-500'}`}>
@@ -138,18 +188,19 @@ export default function Timer() {
 
       {/* Controls */}
       <div className="flex items-center justify-center gap-4 mb-8 px-4">
-        <motion.button onClick={reset}
+        <motion.button onClick={reset} aria-label="Reset timer"
           className="w-14 h-14 rounded-2xl bg-dark-800 border border-white/8 flex items-center justify-center text-dark-400 hover:text-white"
           whileTap={{ scale: 0.9 }}>
           <RotateCcw size={20} />
         </motion.button>
-        <motion.button onClick={toggle}
+        <motion.button onClick={toggle} aria-label={running ? 'Pause timer' : 'Start timer'}
           className={`w-20 h-20 rounded-3xl flex items-center justify-center shadow-lg ${mode === 'study' ? 'bg-green-500 shadow-green-glow' : 'bg-blue-500'}`}
           whileTap={{ scale: 0.93 }}>
           {running ? <Pause size={30} className="text-dark-950" /> : <Play size={30} className="text-dark-950 ml-1" />}
         </motion.button>
         <motion.button
           onClick={() => { setMode(m => m === 'study' ? 'break' : 'study'); setElapsed(0); setRunning(false); }}
+          aria-label={mode === 'study' ? 'Skip to break' : 'Skip to study'}
           className="w-14 h-14 rounded-2xl bg-dark-800 border border-white/8 flex items-center justify-center text-dark-400 hover:text-white"
           whileTap={{ scale: 0.9 }}>
           {mode === 'study' ? <Coffee size={20} /> : <Brain size={20} />}
@@ -170,6 +221,16 @@ export default function Timer() {
           ))}
         </div>
       </div>
+
+      {/* Quick Tools */}
+      <QuickTools onQuickNote={() => setShowNoteModal(true)} />
+
+      <QuickNoteModal
+        isOpen={showNoteModal}
+        subjectLabel={selectedClass?.courseName}
+        onClose={() => setShowNoteModal(false)}
+        onSave={handleSaveNote}
+      />
 
       {/* Stats */}
       <div className="px-4">
