@@ -33,7 +33,21 @@ export default {
           800: '#1a1a1a',
           900: '#111111',
           950: '#0a0a0a',
-        }
+        },
+        surface: {
+          base: 'var(--bg-base)',
+          card: 'var(--bg-surface)',
+          elevated: 'var(--bg-elevated)',
+        },
+        content: {
+          primary: 'var(--text-primary)',
+          secondary: 'var(--text-secondary)',
+          muted: 'var(--text-muted)',
+        },
+        line: {
+          subtle: 'var(--border-color)',
+          strong: 'var(--border-strong)',
+        },
       },
       fontFamily: {
         display: ['Syne', 'sans-serif'],

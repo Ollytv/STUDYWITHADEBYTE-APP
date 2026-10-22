@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Clock, MapPin, User, Pencil, Trash2, MoreVertical } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useRef, useLayoutEffect, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { CourseClass } from '../../types';
 import { getColorClasses } from '../../utils/colors';
 import { formatTimeRange, isClassNow, isClassSoon, isClassPast } from '../../utils/time';
@@ -18,6 +19,38 @@ interface ClassCardProps {
 export function ClassCard({ cls, onEdit, onDelete, onMarkAttendance, showDate = false, index = 0 }: ClassCardProps) {
   const colors = getColorClasses(cls.colorLabel);
   const [showMenu, setShowMenu] = useState(false);
+
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  // Position the menu next to the button, flip upward if there's no room below
+  useLayoutEffect(() => {
+    if (!showMenu || !btnRef.current || !menuRef.current) {
+      setPos(null);
+      return;
+    }
+    const rect = btnRef.current.getBoundingClientRect();
+    const menuH = menuRef.current.offsetHeight;
+    const menuW = menuRef.current.offsetWidth;
+    const spaceBelow = window.innerHeight - rect.bottom;
+
+    const top = spaceBelow < menuH + 12 ? rect.top - menuH - 6 : rect.bottom + 6;
+    const left = Math.max(8, rect.right - menuW);
+    setPos({ top, left });
+  }, [showMenu]);
+
+  // Close on scroll/resize, since a fixed menu won't follow the card
+  useEffect(() => {
+    if (!showMenu) return;
+    const close = () => setShowMenu(false);
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    return () => {
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+    };
+  }, [showMenu]);
 
   const isNow = isClassNow(cls.startTime, cls.endTime);
   const isSoon = isClassSoon(cls.startTime);
@@ -69,16 +102,25 @@ export function ClassCard({ cls, onEdit, onDelete, onMarkAttendance, showDate = 
             <AttendanceBadge percentage={cls.attendancePercentage} />
             <div className="relative">
               <button
+                ref={btnRef}
                 onClick={() => setShowMenu(v => !v)}
                 className="p-2 rounded-xl hover:bg-white/8 transition-colors text-dark-400 hover:text-white"
               >
                 <MoreVertical size={16} />
               </button>
 
-              {showMenu && (
+              {showMenu && createPortal(
                 <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                  <div className="absolute right-0 top-8 z-20 bg-dark-800 border border-white/10 rounded-2xl shadow-card overflow-hidden min-w-[140px]">
+                  <div className="fixed inset-0 z-[999]" onClick={() => setShowMenu(false)} />
+                  <div
+                    ref={menuRef}
+                    className="fixed z-[1000] bg-dark-800 border border-white/10 rounded-2xl shadow-card overflow-hidden min-w-[140px]"
+                    style={{
+                      top: pos?.top ?? 0,
+                      left: pos?.left ?? 0,
+                      visibility: pos ? 'visible' : 'hidden', // avoids a flash before it's positioned
+                    }}
+                  >
                     {onEdit && (
                       <button
                         onClick={() => { onEdit(cls); setShowMenu(false); }}
@@ -114,7 +156,8 @@ export function ClassCard({ cls, onEdit, onDelete, onMarkAttendance, showDate = 
                       </button>
                     )}
                   </div>
-                </>
+                </>,
+                document.body
               )}
             </div>
           </div>

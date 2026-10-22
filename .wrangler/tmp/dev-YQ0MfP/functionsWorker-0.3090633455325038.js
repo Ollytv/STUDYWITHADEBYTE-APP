@@ -1,20 +1,26 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// ../node_modules/unenv/dist/runtime/_internal/utils.mjs
+// .wrangler/tmp/pages-ybBWBh/functionsWorker-0.3090633455325038.mjs
+import { Writable } from "node:stream";
+import { EventEmitter } from "node:events";
+var __defProp2 = Object.defineProperty;
+var __name2 = /* @__PURE__ */ __name((target, value) => __defProp2(target, "name", { value, configurable: true }), "__name");
 // @__NO_SIDE_EFFECTS__
 function createNotImplementedError(name) {
   return new Error(`[unenv] ${name} is not implemented yet!`);
 }
 __name(createNotImplementedError, "createNotImplementedError");
+__name2(createNotImplementedError, "createNotImplementedError");
 // @__NO_SIDE_EFFECTS__
 function notImplemented(name) {
-  const fn = /* @__PURE__ */ __name(() => {
+  const fn = /* @__PURE__ */ __name2(() => {
     throw /* @__PURE__ */ createNotImplementedError(name);
   }, "fn");
   return Object.assign(fn, { __unenv__: true });
 }
 __name(notImplemented, "notImplemented");
+__name2(notImplemented, "notImplemented");
 // @__NO_SIDE_EFFECTS__
 function notImplementedClass(name) {
   return class {
@@ -25,8 +31,7 @@ function notImplementedClass(name) {
   };
 }
 __name(notImplementedClass, "notImplementedClass");
-
-// ../node_modules/unenv/dist/runtime/node/internal/perf_hooks/performance.mjs
+__name2(notImplementedClass, "notImplementedClass");
 var _timeOrigin = globalThis.performance?.timeOrigin ?? Date.now();
 var _performanceNow = globalThis.performance?.now ? globalThis.performance.now.bind(globalThis.performance) : () => Date.now() - _timeOrigin;
 var nodeTiming = {
@@ -55,6 +60,9 @@ var PerformanceEntry = class {
   static {
     __name(this, "PerformanceEntry");
   }
+  static {
+    __name2(this, "PerformanceEntry");
+  }
   __unenv__ = true;
   detail;
   entryType = "event";
@@ -80,7 +88,10 @@ var PerformanceEntry = class {
 };
 var PerformanceMark = class PerformanceMark2 extends PerformanceEntry {
   static {
-    __name(this, "PerformanceMark");
+    __name(this, "PerformanceMark2");
+  }
+  static {
+    __name2(this, "PerformanceMark");
   }
   entryType = "mark";
   constructor() {
@@ -94,11 +105,17 @@ var PerformanceMeasure = class extends PerformanceEntry {
   static {
     __name(this, "PerformanceMeasure");
   }
+  static {
+    __name2(this, "PerformanceMeasure");
+  }
   entryType = "measure";
 };
 var PerformanceResourceTiming = class extends PerformanceEntry {
   static {
     __name(this, "PerformanceResourceTiming");
+  }
+  static {
+    __name2(this, "PerformanceResourceTiming");
   }
   entryType = "resource";
   serverTiming = [];
@@ -127,6 +144,9 @@ var PerformanceObserverEntryList = class {
   static {
     __name(this, "PerformanceObserverEntryList");
   }
+  static {
+    __name2(this, "PerformanceObserverEntryList");
+  }
   __unenv__ = true;
   getEntries() {
     return [];
@@ -142,6 +162,9 @@ var Performance = class {
   static {
     __name(this, "Performance");
   }
+  static {
+    __name2(this, "Performance");
+  }
   __unenv__ = true;
   timeOrigin = _timeOrigin;
   eventCounts = /* @__PURE__ */ new Map();
@@ -150,7 +173,7 @@ var Performance = class {
   navigation = void 0;
   timing = void 0;
   timerify(_fn, _options) {
-    throw createNotImplementedError("Performance.timerify");
+    throw /* @__PURE__ */ createNotImplementedError("Performance.timerify");
   }
   get nodeTiming() {
     return nodeTiming;
@@ -215,13 +238,13 @@ var Performance = class {
     this._resourceTimingBufferSize = maxSize;
   }
   addEventListener(type, listener, options) {
-    throw createNotImplementedError("Performance.addEventListener");
+    throw /* @__PURE__ */ createNotImplementedError("Performance.addEventListener");
   }
   removeEventListener(type, listener, options) {
-    throw createNotImplementedError("Performance.removeEventListener");
+    throw /* @__PURE__ */ createNotImplementedError("Performance.removeEventListener");
   }
   dispatchEvent(event) {
-    throw createNotImplementedError("Performance.dispatchEvent");
+    throw /* @__PURE__ */ createNotImplementedError("Performance.dispatchEvent");
   }
   toJSON() {
     return this;
@@ -230,6 +253,9 @@ var Performance = class {
 var PerformanceObserver = class {
   static {
     __name(this, "PerformanceObserver");
+  }
+  static {
+    __name2(this, "PerformanceObserver");
   }
   __unenv__ = true;
   static supportedEntryTypes = [];
@@ -241,10 +267,10 @@ var PerformanceObserver = class {
     return [];
   }
   disconnect() {
-    throw createNotImplementedError("PerformanceObserver.disconnect");
+    throw /* @__PURE__ */ createNotImplementedError("PerformanceObserver.disconnect");
   }
   observe(options) {
-    throw createNotImplementedError("PerformanceObserver.observe");
+    throw /* @__PURE__ */ createNotImplementedError("PerformanceObserver.observe");
   }
   bind(fn) {
     return fn;
@@ -263,8 +289,6 @@ var PerformanceObserver = class {
   }
 };
 var performance = globalThis.performance && "addEventListener" in globalThis.performance ? globalThis.performance : new Performance();
-
-// ../node_modules/@cloudflare/unenv-preset/dist/runtime/polyfill/performance.mjs
 if (!("__unenv__" in performance)) {
   const proto = Performance.prototype;
   for (const key of Object.getOwnPropertyNames(proto)) {
@@ -284,15 +308,8 @@ globalThis.PerformanceMeasure = PerformanceMeasure;
 globalThis.PerformanceObserver = PerformanceObserver;
 globalThis.PerformanceObserverEntryList = PerformanceObserverEntryList;
 globalThis.PerformanceResourceTiming = PerformanceResourceTiming;
-
-// ../node_modules/unenv/dist/runtime/node/console.mjs
-import { Writable } from "node:stream";
-
-// ../node_modules/unenv/dist/runtime/mock/noop.mjs
 var noop_default = Object.assign(() => {
 }, { __unenv__: true });
-
-// ../node_modules/unenv/dist/runtime/node/console.mjs
 var _console = globalThis.console;
 var _ignoreErrors = true;
 var _stderr = new Writable();
@@ -323,8 +340,6 @@ var Console = _console?.Console ?? /* @__PURE__ */ notImplementedClass("console.
 var _times = /* @__PURE__ */ new Map();
 var _stdoutErrorHandler = noop_default;
 var _stderrErrorHandler = noop_default;
-
-// ../node_modules/@cloudflare/unenv-preset/dist/runtime/node/console.mjs
 var workerdConsole = globalThis["console"];
 var {
   assert,
@@ -364,12 +379,8 @@ Object.assign(workerdConsole, {
   _times
 });
 var console_default = workerdConsole;
-
-// ../node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-console
 globalThis.console = console_default;
-
-// ../node_modules/unenv/dist/runtime/node/internal/process/hrtime.mjs
-var hrtime = /* @__PURE__ */ Object.assign(/* @__PURE__ */ __name(function hrtime2(startTime) {
+var hrtime = /* @__PURE__ */ Object.assign(/* @__PURE__ */ __name2(/* @__PURE__ */ __name(function hrtime2(startTime) {
   const now = Date.now();
   const seconds = Math.trunc(now / 1e3);
   const nanos = now % 1e3 * 1e6;
@@ -383,17 +394,15 @@ var hrtime = /* @__PURE__ */ Object.assign(/* @__PURE__ */ __name(function hrtim
     return [diffSeconds, diffNanos];
   }
   return [seconds, nanos];
-}, "hrtime"), { bigint: /* @__PURE__ */ __name(function bigint() {
+}, "hrtime2"), "hrtime"), { bigint: /* @__PURE__ */ __name2(/* @__PURE__ */ __name(function bigint() {
   return BigInt(Date.now() * 1e6);
-}, "bigint") });
-
-// ../node_modules/unenv/dist/runtime/node/internal/process/process.mjs
-import { EventEmitter } from "node:events";
-
-// ../node_modules/unenv/dist/runtime/node/internal/tty/read-stream.mjs
+}, "bigint"), "bigint") });
 var ReadStream = class {
   static {
     __name(this, "ReadStream");
+  }
+  static {
+    __name2(this, "ReadStream");
   }
   fd;
   isRaw = false;
@@ -406,11 +415,12 @@ var ReadStream = class {
     return this;
   }
 };
-
-// ../node_modules/unenv/dist/runtime/node/internal/tty/write-stream.mjs
 var WriteStream = class {
   static {
     __name(this, "WriteStream");
+  }
+  static {
+    __name2(this, "WriteStream");
   }
   fd;
   columns = 80;
@@ -456,14 +466,13 @@ var WriteStream = class {
     return false;
   }
 };
-
-// ../node_modules/unenv/dist/runtime/node/internal/process/node-version.mjs
 var NODE_VERSION = "22.14.0";
-
-// ../node_modules/unenv/dist/runtime/node/internal/process/process.mjs
 var Process = class _Process extends EventEmitter {
   static {
-    __name(this, "Process");
+    __name(this, "_Process");
+  }
+  static {
+    __name2(this, "Process");
   }
   env;
   hrtime;
@@ -576,58 +585,58 @@ var Process = class _Process extends EventEmitter {
   }
   // --- unimplemented methods ---
   umask() {
-    throw createNotImplementedError("process.umask");
+    throw /* @__PURE__ */ createNotImplementedError("process.umask");
   }
   getBuiltinModule() {
     return void 0;
   }
   getActiveResourcesInfo() {
-    throw createNotImplementedError("process.getActiveResourcesInfo");
+    throw /* @__PURE__ */ createNotImplementedError("process.getActiveResourcesInfo");
   }
   exit() {
-    throw createNotImplementedError("process.exit");
+    throw /* @__PURE__ */ createNotImplementedError("process.exit");
   }
   reallyExit() {
-    throw createNotImplementedError("process.reallyExit");
+    throw /* @__PURE__ */ createNotImplementedError("process.reallyExit");
   }
   kill() {
-    throw createNotImplementedError("process.kill");
+    throw /* @__PURE__ */ createNotImplementedError("process.kill");
   }
   abort() {
-    throw createNotImplementedError("process.abort");
+    throw /* @__PURE__ */ createNotImplementedError("process.abort");
   }
   dlopen() {
-    throw createNotImplementedError("process.dlopen");
+    throw /* @__PURE__ */ createNotImplementedError("process.dlopen");
   }
   setSourceMapsEnabled() {
-    throw createNotImplementedError("process.setSourceMapsEnabled");
+    throw /* @__PURE__ */ createNotImplementedError("process.setSourceMapsEnabled");
   }
   loadEnvFile() {
-    throw createNotImplementedError("process.loadEnvFile");
+    throw /* @__PURE__ */ createNotImplementedError("process.loadEnvFile");
   }
   disconnect() {
-    throw createNotImplementedError("process.disconnect");
+    throw /* @__PURE__ */ createNotImplementedError("process.disconnect");
   }
   cpuUsage() {
-    throw createNotImplementedError("process.cpuUsage");
+    throw /* @__PURE__ */ createNotImplementedError("process.cpuUsage");
   }
   setUncaughtExceptionCaptureCallback() {
-    throw createNotImplementedError("process.setUncaughtExceptionCaptureCallback");
+    throw /* @__PURE__ */ createNotImplementedError("process.setUncaughtExceptionCaptureCallback");
   }
   hasUncaughtExceptionCaptureCallback() {
-    throw createNotImplementedError("process.hasUncaughtExceptionCaptureCallback");
+    throw /* @__PURE__ */ createNotImplementedError("process.hasUncaughtExceptionCaptureCallback");
   }
   initgroups() {
-    throw createNotImplementedError("process.initgroups");
+    throw /* @__PURE__ */ createNotImplementedError("process.initgroups");
   }
   openStdin() {
-    throw createNotImplementedError("process.openStdin");
+    throw /* @__PURE__ */ createNotImplementedError("process.openStdin");
   }
   assert() {
-    throw createNotImplementedError("process.assert");
+    throw /* @__PURE__ */ createNotImplementedError("process.assert");
   }
   binding() {
-    throw createNotImplementedError("process.binding");
+    throw /* @__PURE__ */ createNotImplementedError("process.binding");
   }
   // --- attached interfaces ---
   permission = { has: /* @__PURE__ */ notImplemented("process.permission.has") };
@@ -653,7 +662,7 @@ var Process = class _Process extends EventEmitter {
     external: 0,
     heapTotal: 0,
     heapUsed: 0
-  }), { rss: /* @__PURE__ */ __name(() => 0, "rss") });
+  }), { rss: /* @__PURE__ */ __name2(() => 0, "rss") });
   // --- undefined props ---
   mainModule = void 0;
   domain = void 0;
@@ -694,8 +703,6 @@ var Process = class _Process extends EventEmitter {
   _send = void 0;
   _linkedBinding = void 0;
 };
-
-// ../node_modules/@cloudflare/unenv-preset/dist/runtime/node/process.mjs
 var globalProcess = globalThis["process"];
 var getBuiltinModule = globalProcess.getBuiltinModule;
 var workerdProcess = getBuiltinModule("node:process");
@@ -924,12 +931,11 @@ var _process = {
   _linkedBinding
 };
 var process_default = _process;
-
-// ../node_modules/wrangler/_virtual_unenv_global_polyfill-@cloudflare-unenv-preset-node-process
 globalThis.process = process_default;
-
-// api/_lib/types.ts
 var ProviderError = class extends Error {
+  static {
+    __name(this, "ProviderError");
+  }
   constructor(message2, provider, retryable, status) {
     super(message2);
     this.provider = provider;
@@ -937,12 +943,13 @@ var ProviderError = class extends Error {
     this.status = status;
     this.name = "ProviderError";
   }
+  provider;
+  retryable;
+  status;
   static {
-    __name(this, "ProviderError");
+    __name2(this, "ProviderError");
   }
 };
-
-// api/_lib/providers/base.ts
 var SYSTEM_INSTRUCTION = `You are StudiByte AI, an intelligent academic assistant built into the StudiByte student productivity app.
 
 Your role:
@@ -960,7 +967,17 @@ Response style:
 - If you don't know something, say so honestly
 
 You are NOT a general-purpose chatbot. Politely redirect off-topic requests back to academic topics.`;
+var VISION_CONTEXT_INSTRUCTION = `
+The student has attached a file. Analyze it fully and answer their message.
+
+After your answer, add a new line containing exactly: ---MATERIAL CONTEXT---
+Then write a thorough, dense, plain-text extraction of everything relevant in
+the attachment (all text, questions, diagram descriptions, data) so it can be
+reused as context for follow-up questions without re-analyzing the file. This
+section is never shown to the student, so write it for another AI to read,
+not for a human.`;
 var PROVIDER_TIMEOUT_MS = 8e3;
+var VISION_PROVIDER_TIMEOUT_MS = 15e3;
 function withTimeout(promise, ms, provider) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -979,10 +996,12 @@ function withTimeout(promise, ms, provider) {
   });
 }
 __name(withTimeout, "withTimeout");
+__name2(withTimeout, "withTimeout");
 function isRetryableStatus(status) {
   return status === 429 || status >= 500;
 }
 __name(isRetryableStatus, "isRetryableStatus");
+__name2(isRetryableStatus, "isRetryableStatus");
 async function openAICompatibleChat(opts) {
   const {
     url,
@@ -1034,8 +1053,57 @@ async function openAICompatibleChat(opts) {
   return text;
 }
 __name(openAICompatibleChat, "openAICompatibleChat");
-
-// api/_lib/providers/gemini.ts
+__name2(openAICompatibleChat, "openAICompatibleChat");
+async function openAICompatibleVisionChat(opts) {
+  const { url, apiKey, model, userText, priorMessages, mimeType, dataBase64, provider, extraHeaders = {} } = opts;
+  let response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+        ...extraHeaders
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: SYSTEM_INSTRUCTION + "\n" + VISION_CONTEXT_INSTRUCTION },
+          ...priorMessages.map((m) => ({ role: m.role, content: m.content })),
+          {
+            role: "user",
+            content: [
+              { type: "text", text: userText || "Analyze this file." },
+              { type: "image_url", image_url: { url: `data:${mimeType};base64,${dataBase64}` } }
+            ]
+          }
+        ],
+        max_tokens: 2048,
+        temperature: 0.5
+      })
+    });
+  } catch {
+    throw new ProviderError(`${provider} network error`, provider, true);
+  }
+  if (!response.ok) {
+    const status = response.status;
+    let bodyText = "";
+    try {
+      bodyText = await response.text();
+    } catch {
+    }
+    console.error(`[${provider}] vision API error ${status}:`, bodyText.slice(0, 500));
+    throw new ProviderError(`${provider} returned ${status}`, provider, isRetryableStatus(status), status);
+  }
+  const data = await response.json();
+  const text = data?.choices?.[0]?.message?.content;
+  if (!text || typeof text !== "string" || text.trim() === "") {
+    throw new ProviderError(`${provider} returned an empty vision response`, provider, true, 500);
+  }
+  return text;
+}
+__name(openAICompatibleVisionChat, "openAICompatibleVisionChat");
+__name2(openAICompatibleVisionChat, "openAICompatibleVisionChat");
 function toGeminiContents(messages) {
   return messages.map((m) => ({
     role: m.role === "assistant" ? "model" : "user",
@@ -1043,7 +1111,16 @@ function toGeminiContents(messages) {
   }));
 }
 __name(toGeminiContents, "toGeminiContents");
-async function call(model, apiKey, contents) {
+__name2(toGeminiContents, "toGeminiContents");
+function toGeminiContentsWithAttachment(messages, attachment) {
+  const contents = toGeminiContents(messages);
+  const last = contents[contents.length - 1];
+  last.parts.push({ inlineData: { mimeType: attachment.mimeType, data: attachment.dataBase64 } });
+  return contents;
+}
+__name(toGeminiContentsWithAttachment, "toGeminiContentsWithAttachment");
+__name2(toGeminiContentsWithAttachment, "toGeminiContentsWithAttachment");
+async function call(model, apiKey, contents, systemInstruction = SYSTEM_INSTRUCTION) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   let response;
   try {
@@ -1052,7 +1129,7 @@ async function call(model, apiKey, contents) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents,
-        systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+        systemInstruction: { parts: [{ text: systemInstruction }] },
         generationConfig: {
           temperature: 0.7,
           topK: 40,
@@ -1090,6 +1167,7 @@ async function call(model, apiKey, contents) {
   return text;
 }
 __name(call, "call");
+__name2(call, "call");
 var geminiProvider = {
   name: "gemini",
   generateResponse(messages, env2) {
@@ -1104,10 +1182,23 @@ var geminiProvider = {
       PROVIDER_TIMEOUT_MS,
       "gemini"
     );
+  },
+  // Native multimodal — Gemini accepts images AND PDFs as inlineData directly,
+  // no separate OCR/extraction step needed.
+  generateVisionResponse(messages, attachment, env2) {
+    if (!env2.GEMINI_API_KEY) throw new ProviderError("gemini not configured", "gemini", false);
+    return withTimeout(
+      call(
+        env2.GEMINI_MODEL,
+        env2.GEMINI_API_KEY,
+        toGeminiContentsWithAttachment(messages, attachment),
+        SYSTEM_INSTRUCTION + "\n" + VISION_CONTEXT_INSTRUCTION
+      ),
+      VISION_PROVIDER_TIMEOUT_MS,
+      "gemini"
+    );
   }
 };
-
-// api/_lib/providers/groq.ts
 var GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 var groqProvider = {
   name: "groq",
@@ -1129,8 +1220,6 @@ var groqProvider = {
     );
   }
 };
-
-// api/_lib/providers/deepseek.ts
 var DEEPSEEK_URL = "https://api.deepseek.com/chat/completions";
 var deepseekProvider = {
   name: "deepseek",
@@ -1152,8 +1241,6 @@ var deepseekProvider = {
     );
   }
 };
-
-// api/_lib/providers/openrouter.ts
 var OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 var EXTRA_HEADERS = {
   "HTTP-Referer": "https://studibyte.space",
@@ -1192,10 +1279,37 @@ var openrouterProvider = {
       PROVIDER_TIMEOUT_MS,
       "openrouter"
     );
+  },
+  // Vision fallback for images only. gpt-4o-mini (the currently configured
+  // OPENROUTER_MODEL) supports image_url content parts reliably; arbitrary
+  // PDF bytes are NOT well-supported through that same content-part shape
+  // across OpenRouter's routed models, so PDFs deliberately do not fall
+  // back here — a PDF-attachment request fails clearly if Gemini is down,
+  // rather than silently sending garbage to a model that can't read it.
+  generateVisionResponse(messages, attachment, env2) {
+    if (!env2.OPENROUTER_API_KEY) throw new ProviderError("openrouter not configured", "openrouter", false);
+    if (attachment.kind !== "image") {
+      throw new ProviderError("openrouter vision only supports images", "openrouter", false);
+    }
+    const userMsg = messages[messages.length - 1];
+    const priorMessages = messages.slice(0, -1);
+    return withTimeout(
+      openAICompatibleVisionChat({
+        url: OPENROUTER_URL,
+        apiKey: env2.OPENROUTER_API_KEY,
+        model: env2.OPENROUTER_MODEL,
+        userText: userMsg?.content ?? "",
+        priorMessages,
+        mimeType: attachment.mimeType,
+        dataBase64: attachment.dataBase64,
+        provider: "openrouter",
+        extraHeaders: EXTRA_HEADERS
+      }),
+      VISION_PROVIDER_TIMEOUT_MS,
+      "openrouter"
+    );
   }
 };
-
-// api/_lib/health.ts
 var UNHEALTHY_THRESHOLD = 3;
 var COOLDOWN_MS = 6e4;
 var state = /* @__PURE__ */ new Map();
@@ -1208,12 +1322,14 @@ function getState(name) {
   return s;
 }
 __name(getState, "getState");
+__name2(getState, "getState");
 function isSkippable(name) {
   const s = getState(name);
   if (s.consecutiveFailures < UNHEALTHY_THRESHOLD) return false;
   return Date.now() - (s.lastFailureAt ?? 0) < COOLDOWN_MS;
 }
 __name(isSkippable, "isSkippable");
+__name2(isSkippable, "isSkippable");
 function recordSuccess(name, latencyMs) {
   const s = getState(name);
   s.consecutiveFailures = 0;
@@ -1222,6 +1338,7 @@ function recordSuccess(name, latencyMs) {
   s.avgLatencyMs = s.avgLatencyMs === 0 ? latencyMs : s.avgLatencyMs * 0.8 + latencyMs * 0.2;
 }
 __name(recordSuccess, "recordSuccess");
+__name2(recordSuccess, "recordSuccess");
 function recordFailure(name) {
   const s = getState(name);
   s.consecutiveFailures += 1;
@@ -1230,8 +1347,7 @@ function recordFailure(name) {
   s.totalFailures += 1;
 }
 __name(recordFailure, "recordFailure");
-
-// api/_lib/router.ts
+__name2(recordFailure, "recordFailure");
 var PROVIDERS = {
   gemini: geminiProvider,
   groq: groqProvider,
@@ -1239,11 +1355,13 @@ var PROVIDERS = {
   openrouter: openrouterProvider
 };
 var PROVIDER_ORDER = ["gemini", "groq", "deepseek", "openrouter"];
+var VISION_PROVIDER_ORDER = ["gemini", "openrouter"];
 var SAME_PROVIDER_RETRY_DELAY_MS = 500;
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 __name(sleep, "sleep");
+__name2(sleep, "sleep");
 async function tryProvider(provider, messages, env2) {
   const start = Date.now();
   try {
@@ -1258,6 +1376,7 @@ async function tryProvider(provider, messages, env2) {
   }
 }
 __name(tryProvider, "tryProvider");
+__name2(tryProvider, "tryProvider");
 async function routeGenerateResponse(messages, env2) {
   let lastError = null;
   let fallbackCount = 0;
@@ -1283,12 +1402,39 @@ async function routeGenerateResponse(messages, env2) {
   throw lastError ?? new ProviderError("All AI providers are unavailable", "openrouter", false);
 }
 __name(routeGenerateResponse, "routeGenerateResponse");
-
-// ../node_modules/jose/dist/browser/runtime/webcrypto.js
+__name2(routeGenerateResponse, "routeGenerateResponse");
+async function routeGenerateVisionResponse(messages, attachment, env2) {
+  let lastError = null;
+  let fallbackCount = 0;
+  for (const name of VISION_PROVIDER_ORDER) {
+    const provider = PROVIDERS[name];
+    if (!provider.generateVisionResponse) continue;
+    if (isSkippable(name)) {
+      console.log(`[router] skipping ${name} for vision \u2014 circuit open`);
+      fallbackCount += 1;
+      continue;
+    }
+    const start = Date.now();
+    try {
+      const text = await provider.generateVisionResponse(messages, attachment, env2);
+      const latencyMs = Date.now() - start;
+      recordSuccess(name, latencyMs);
+      console.log(`[router] vision success provider=${name} latencyMs=${latencyMs} fallbackCount=${fallbackCount}`);
+      return { text, provider: name, latencyMs, fallbackCount };
+    } catch (err) {
+      const perr = err instanceof ProviderError ? err : new ProviderError(String(err), name, true);
+      recordFailure(name);
+      console.error(`[router] vision provider=${name} failed: ${perr.message}`);
+      lastError = perr;
+      fallbackCount += 1;
+    }
+  }
+  throw lastError ?? new ProviderError("No vision-capable AI providers are available", "gemini", false);
+}
+__name(routeGenerateVisionResponse, "routeGenerateVisionResponse");
+__name2(routeGenerateVisionResponse, "routeGenerateVisionResponse");
 var webcrypto_default = crypto;
-var isCryptoKey = /* @__PURE__ */ __name((key) => key instanceof CryptoKey, "isCryptoKey");
-
-// ../node_modules/jose/dist/browser/lib/buffer_utils.js
+var isCryptoKey = /* @__PURE__ */ __name2((key) => key instanceof CryptoKey, "isCryptoKey");
 var encoder = new TextEncoder();
 var decoder = new TextDecoder();
 var MAX_INT32 = 2 ** 32;
@@ -1303,9 +1449,8 @@ function concat(...buffers) {
   return buf;
 }
 __name(concat, "concat");
-
-// ../node_modules/jose/dist/browser/runtime/base64url.js
-var decodeBase64 = /* @__PURE__ */ __name((encoded) => {
+__name2(concat, "concat");
+var decodeBase64 = /* @__PURE__ */ __name2((encoded) => {
   const binary = atob(encoded);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {
@@ -1313,7 +1458,7 @@ var decodeBase64 = /* @__PURE__ */ __name((encoded) => {
   }
   return bytes;
 }, "decodeBase64");
-var decode = /* @__PURE__ */ __name((input) => {
+var decode = /* @__PURE__ */ __name2((input) => {
   let encoded = input;
   if (encoded instanceof Uint8Array) {
     encoded = decoder.decode(encoded);
@@ -1325,11 +1470,12 @@ var decode = /* @__PURE__ */ __name((input) => {
     throw new TypeError("The input to be decoded is not correctly encoded.");
   }
 }, "decode");
-
-// ../node_modules/jose/dist/browser/util/errors.js
 var JOSEError = class extends Error {
   static {
     __name(this, "JOSEError");
+  }
+  static {
+    __name2(this, "JOSEError");
   }
   constructor(message2, options) {
     super(message2, options);
@@ -1342,6 +1488,9 @@ JOSEError.code = "ERR_JOSE_GENERIC";
 var JWTClaimValidationFailed = class extends JOSEError {
   static {
     __name(this, "JWTClaimValidationFailed");
+  }
+  static {
+    __name2(this, "JWTClaimValidationFailed");
   }
   constructor(message2, payload, claim = "unspecified", reason = "unspecified") {
     super(message2, { cause: { claim, reason, payload } });
@@ -1356,6 +1505,9 @@ var JWTExpired = class extends JOSEError {
   static {
     __name(this, "JWTExpired");
   }
+  static {
+    __name2(this, "JWTExpired");
+  }
   constructor(message2, payload, claim = "unspecified", reason = "unspecified") {
     super(message2, { cause: { claim, reason, payload } });
     this.code = "ERR_JWT_EXPIRED";
@@ -1369,6 +1521,9 @@ var JOSEAlgNotAllowed = class extends JOSEError {
   static {
     __name(this, "JOSEAlgNotAllowed");
   }
+  static {
+    __name2(this, "JOSEAlgNotAllowed");
+  }
   constructor() {
     super(...arguments);
     this.code = "ERR_JOSE_ALG_NOT_ALLOWED";
@@ -1378,6 +1533,9 @@ JOSEAlgNotAllowed.code = "ERR_JOSE_ALG_NOT_ALLOWED";
 var JOSENotSupported = class extends JOSEError {
   static {
     __name(this, "JOSENotSupported");
+  }
+  static {
+    __name2(this, "JOSENotSupported");
   }
   constructor() {
     super(...arguments);
@@ -1389,6 +1547,9 @@ var JWEDecryptionFailed = class extends JOSEError {
   static {
     __name(this, "JWEDecryptionFailed");
   }
+  static {
+    __name2(this, "JWEDecryptionFailed");
+  }
   constructor(message2 = "decryption operation failed", options) {
     super(message2, options);
     this.code = "ERR_JWE_DECRYPTION_FAILED";
@@ -1398,6 +1559,9 @@ JWEDecryptionFailed.code = "ERR_JWE_DECRYPTION_FAILED";
 var JWEInvalid = class extends JOSEError {
   static {
     __name(this, "JWEInvalid");
+  }
+  static {
+    __name2(this, "JWEInvalid");
   }
   constructor() {
     super(...arguments);
@@ -1409,6 +1573,9 @@ var JWSInvalid = class extends JOSEError {
   static {
     __name(this, "JWSInvalid");
   }
+  static {
+    __name2(this, "JWSInvalid");
+  }
   constructor() {
     super(...arguments);
     this.code = "ERR_JWS_INVALID";
@@ -1418,6 +1585,9 @@ JWSInvalid.code = "ERR_JWS_INVALID";
 var JWTInvalid = class extends JOSEError {
   static {
     __name(this, "JWTInvalid");
+  }
+  static {
+    __name2(this, "JWTInvalid");
   }
   constructor() {
     super(...arguments);
@@ -1429,6 +1599,9 @@ var JWKInvalid = class extends JOSEError {
   static {
     __name(this, "JWKInvalid");
   }
+  static {
+    __name2(this, "JWKInvalid");
+  }
   constructor() {
     super(...arguments);
     this.code = "ERR_JWK_INVALID";
@@ -1438,6 +1611,9 @@ JWKInvalid.code = "ERR_JWK_INVALID";
 var JWKSInvalid = class extends JOSEError {
   static {
     __name(this, "JWKSInvalid");
+  }
+  static {
+    __name2(this, "JWKSInvalid");
   }
   constructor() {
     super(...arguments);
@@ -1449,6 +1625,9 @@ var JWKSNoMatchingKey = class extends JOSEError {
   static {
     __name(this, "JWKSNoMatchingKey");
   }
+  static {
+    __name2(this, "JWKSNoMatchingKey");
+  }
   constructor(message2 = "no applicable key found in the JSON Web Key Set", options) {
     super(message2, options);
     this.code = "ERR_JWKS_NO_MATCHING_KEY";
@@ -1458,6 +1637,9 @@ JWKSNoMatchingKey.code = "ERR_JWKS_NO_MATCHING_KEY";
 var JWKSMultipleMatchingKeys = class extends JOSEError {
   static {
     __name(this, "JWKSMultipleMatchingKeys");
+  }
+  static {
+    __name2(this, "JWKSMultipleMatchingKeys");
   }
   constructor(message2 = "multiple matching keys found in the JSON Web Key Set", options) {
     super(message2, options);
@@ -1469,6 +1651,9 @@ var JWKSTimeout = class extends JOSEError {
   static {
     __name(this, "JWKSTimeout");
   }
+  static {
+    __name2(this, "JWKSTimeout");
+  }
   constructor(message2 = "request timed out", options) {
     super(message2, options);
     this.code = "ERR_JWKS_TIMEOUT";
@@ -1479,26 +1664,30 @@ var JWSSignatureVerificationFailed = class extends JOSEError {
   static {
     __name(this, "JWSSignatureVerificationFailed");
   }
+  static {
+    __name2(this, "JWSSignatureVerificationFailed");
+  }
   constructor(message2 = "signature verification failed", options) {
     super(message2, options);
     this.code = "ERR_JWS_SIGNATURE_VERIFICATION_FAILED";
   }
 };
 JWSSignatureVerificationFailed.code = "ERR_JWS_SIGNATURE_VERIFICATION_FAILED";
-
-// ../node_modules/jose/dist/browser/lib/crypto_key.js
 function unusable(name, prop = "algorithm.name") {
   return new TypeError(`CryptoKey does not support this operation, its ${prop} must be ${name}`);
 }
 __name(unusable, "unusable");
+__name2(unusable, "unusable");
 function isAlgorithm(algorithm, name) {
   return algorithm.name === name;
 }
 __name(isAlgorithm, "isAlgorithm");
-function getHashLength(hash) {
-  return parseInt(hash.name.slice(4), 10);
+__name2(isAlgorithm, "isAlgorithm");
+function getHashLength(hash2) {
+  return parseInt(hash2.name.slice(4), 10);
 }
 __name(getHashLength, "getHashLength");
+__name2(getHashLength, "getHashLength");
 function getNamedCurve(alg) {
   switch (alg) {
     case "ES256":
@@ -1512,6 +1701,7 @@ function getNamedCurve(alg) {
   }
 }
 __name(getNamedCurve, "getNamedCurve");
+__name2(getNamedCurve, "getNamedCurve");
 function checkUsage(key, usages) {
   if (usages.length && !usages.some((expected) => key.usages.includes(expected))) {
     let msg = "CryptoKey does not support this operation, its usages must include ";
@@ -1527,6 +1717,7 @@ function checkUsage(key, usages) {
   }
 }
 __name(checkUsage, "checkUsage");
+__name2(checkUsage, "checkUsage");
 function checkSigCryptoKey(key, alg, ...usages) {
   switch (alg) {
     case "HS256":
@@ -1590,8 +1781,7 @@ function checkSigCryptoKey(key, alg, ...usages) {
   checkUsage(key, usages);
 }
 __name(checkSigCryptoKey, "checkSigCryptoKey");
-
-// ../node_modules/jose/dist/browser/lib/invalid_key_input.js
+__name2(checkSigCryptoKey, "checkSigCryptoKey");
 function message(msg, actual, ...types2) {
   types2 = types2.filter(Boolean);
   if (types2.length > 2) {
@@ -1614,25 +1804,23 @@ function message(msg, actual, ...types2) {
   return msg;
 }
 __name(message, "message");
-var invalid_key_input_default = /* @__PURE__ */ __name((actual, ...types2) => {
+__name2(message, "message");
+var invalid_key_input_default = /* @__PURE__ */ __name2((actual, ...types2) => {
   return message("Key must be ", actual, ...types2);
 }, "default");
 function withAlg(alg, actual, ...types2) {
   return message(`Key for the ${alg} algorithm must be `, actual, ...types2);
 }
 __name(withAlg, "withAlg");
-
-// ../node_modules/jose/dist/browser/runtime/is_key_like.js
-var is_key_like_default = /* @__PURE__ */ __name((key) => {
+__name2(withAlg, "withAlg");
+var is_key_like_default = /* @__PURE__ */ __name2((key) => {
   if (isCryptoKey(key)) {
     return true;
   }
   return key?.[Symbol.toStringTag] === "KeyObject";
 }, "default");
 var types = ["CryptoKey"];
-
-// ../node_modules/jose/dist/browser/lib/is_disjoint.js
-var isDisjoint = /* @__PURE__ */ __name((...headers) => {
+var isDisjoint = /* @__PURE__ */ __name2((...headers) => {
   const sources = headers.filter(Boolean);
   if (sources.length === 0 || sources.length === 1) {
     return true;
@@ -1654,12 +1842,11 @@ var isDisjoint = /* @__PURE__ */ __name((...headers) => {
   return true;
 }, "isDisjoint");
 var is_disjoint_default = isDisjoint;
-
-// ../node_modules/jose/dist/browser/lib/is_object.js
 function isObjectLike(value) {
   return typeof value === "object" && value !== null;
 }
 __name(isObjectLike, "isObjectLike");
+__name2(isObjectLike, "isObjectLike");
 function isObject(input) {
   if (!isObjectLike(input) || Object.prototype.toString.call(input) !== "[object Object]") {
     return false;
@@ -1674,9 +1861,8 @@ function isObject(input) {
   return Object.getPrototypeOf(input) === proto;
 }
 __name(isObject, "isObject");
-
-// ../node_modules/jose/dist/browser/runtime/check_key_length.js
-var check_key_length_default = /* @__PURE__ */ __name((alg, key) => {
+__name2(isObject, "isObject");
+var check_key_length_default = /* @__PURE__ */ __name2((alg, key) => {
   if (alg.startsWith("RS") || alg.startsWith("PS")) {
     const { modulusLength } = key.algorithm;
     if (typeof modulusLength !== "number" || modulusLength < 2048) {
@@ -1684,26 +1870,26 @@ var check_key_length_default = /* @__PURE__ */ __name((alg, key) => {
     }
   }
 }, "default");
-
-// ../node_modules/jose/dist/browser/lib/is_jwk.js
 function isJWK(key) {
   return isObject(key) && typeof key.kty === "string";
 }
 __name(isJWK, "isJWK");
+__name2(isJWK, "isJWK");
 function isPrivateJWK(key) {
   return key.kty !== "oct" && typeof key.d === "string";
 }
 __name(isPrivateJWK, "isPrivateJWK");
+__name2(isPrivateJWK, "isPrivateJWK");
 function isPublicJWK(key) {
   return key.kty !== "oct" && typeof key.d === "undefined";
 }
 __name(isPublicJWK, "isPublicJWK");
+__name2(isPublicJWK, "isPublicJWK");
 function isSecretJWK(key) {
   return isJWK(key) && key.kty === "oct" && typeof key.k === "string";
 }
 __name(isSecretJWK, "isSecretJWK");
-
-// ../node_modules/jose/dist/browser/runtime/jwk_to_key.js
+__name2(isSecretJWK, "isSecretJWK");
 function subtleMapping(jwk) {
   let algorithm;
   let keyUsages;
@@ -1791,7 +1977,8 @@ function subtleMapping(jwk) {
   return { algorithm, keyUsages };
 }
 __name(subtleMapping, "subtleMapping");
-var parse = /* @__PURE__ */ __name(async (jwk) => {
+__name2(subtleMapping, "subtleMapping");
+var parse = /* @__PURE__ */ __name2(async (jwk) => {
   if (!jwk.alg) {
     throw new TypeError('"alg" argument is required when "jwk.alg" is not present');
   }
@@ -1807,15 +1994,13 @@ var parse = /* @__PURE__ */ __name(async (jwk) => {
   return webcrypto_default.subtle.importKey("jwk", keyData, ...rest);
 }, "parse");
 var jwk_to_key_default = parse;
-
-// ../node_modules/jose/dist/browser/runtime/normalize_key.js
-var exportKeyValue = /* @__PURE__ */ __name((k) => decode(k), "exportKeyValue");
+var exportKeyValue = /* @__PURE__ */ __name2((k) => decode(k), "exportKeyValue");
 var privCache;
 var pubCache;
-var isKeyObject = /* @__PURE__ */ __name((key) => {
+var isKeyObject = /* @__PURE__ */ __name2((key) => {
   return key?.[Symbol.toStringTag] === "KeyObject";
 }, "isKeyObject");
-var importAndCache = /* @__PURE__ */ __name(async (cache, key, jwk, alg, freeze = false) => {
+var importAndCache = /* @__PURE__ */ __name2(async (cache, key, jwk, alg, freeze = false) => {
   let cached = cache.get(key);
   if (cached?.[alg]) {
     return cached[alg];
@@ -1830,7 +2015,7 @@ var importAndCache = /* @__PURE__ */ __name(async (cache, key, jwk, alg, freeze 
   }
   return cryptoKey;
 }, "importAndCache");
-var normalizePublicKey = /* @__PURE__ */ __name((key, alg) => {
+var normalizePublicKey = /* @__PURE__ */ __name2((key, alg) => {
   if (isKeyObject(key)) {
     let jwk = key.export({ format: "jwk" });
     delete jwk.d;
@@ -1854,7 +2039,7 @@ var normalizePublicKey = /* @__PURE__ */ __name((key, alg) => {
   }
   return key;
 }, "normalizePublicKey");
-var normalizePrivateKey = /* @__PURE__ */ __name((key, alg) => {
+var normalizePrivateKey = /* @__PURE__ */ __name2((key, alg) => {
   if (isKeyObject(key)) {
     let jwk = key.export({ format: "jwk" });
     if (jwk.k) {
@@ -1873,8 +2058,6 @@ var normalizePrivateKey = /* @__PURE__ */ __name((key, alg) => {
   return key;
 }, "normalizePrivateKey");
 var normalize_key_default = { normalizePublicKey, normalizePrivateKey };
-
-// ../node_modules/jose/dist/browser/key/import.js
 async function importJWK(jwk, alg) {
   if (!isObject(jwk)) {
     throw new TypeError("JWK must be an object");
@@ -1898,10 +2081,9 @@ async function importJWK(jwk, alg) {
   }
 }
 __name(importJWK, "importJWK");
-
-// ../node_modules/jose/dist/browser/lib/check_key_type.js
-var tag = /* @__PURE__ */ __name((key) => key?.[Symbol.toStringTag], "tag");
-var jwkMatchesOp = /* @__PURE__ */ __name((alg, key, usage) => {
+__name2(importJWK, "importJWK");
+var tag = /* @__PURE__ */ __name2((key) => key?.[Symbol.toStringTag], "tag");
+var jwkMatchesOp = /* @__PURE__ */ __name2((alg, key, usage) => {
   if (key.use !== void 0 && key.use !== "sig") {
     throw new TypeError("Invalid key for this operation, when present its use must be sig");
   }
@@ -1913,7 +2095,7 @@ var jwkMatchesOp = /* @__PURE__ */ __name((alg, key, usage) => {
   }
   return true;
 }, "jwkMatchesOp");
-var symmetricTypeCheck = /* @__PURE__ */ __name((alg, key, usage, allowJwk) => {
+var symmetricTypeCheck = /* @__PURE__ */ __name2((alg, key, usage, allowJwk) => {
   if (key instanceof Uint8Array)
     return;
   if (allowJwk && isJWK(key)) {
@@ -1928,7 +2110,7 @@ var symmetricTypeCheck = /* @__PURE__ */ __name((alg, key, usage, allowJwk) => {
     throw new TypeError(`${tag(key)} instances for symmetric algorithms must be of type "secret"`);
   }
 }, "symmetricTypeCheck");
-var asymmetricTypeCheck = /* @__PURE__ */ __name((alg, key, usage, allowJwk) => {
+var asymmetricTypeCheck = /* @__PURE__ */ __name2((alg, key, usage, allowJwk) => {
   if (allowJwk && isJWK(key)) {
     switch (usage) {
       case "sign":
@@ -1969,10 +2151,9 @@ function checkKeyType(allowJwk, alg, key, usage) {
   }
 }
 __name(checkKeyType, "checkKeyType");
+__name2(checkKeyType, "checkKeyType");
 var check_key_type_default = checkKeyType.bind(void 0, false);
 var checkKeyTypeWithJwk = checkKeyType.bind(void 0, true);
-
-// ../node_modules/jose/dist/browser/lib/validate_crit.js
 function validateCrit(Err, recognizedDefault, recognizedOption, protectedHeader, joseHeader) {
   if (joseHeader.crit !== void 0 && protectedHeader?.crit === void 0) {
     throw new Err('"crit" (Critical) Header Parameter MUST be integrity protected');
@@ -2003,10 +2184,9 @@ function validateCrit(Err, recognizedDefault, recognizedOption, protectedHeader,
   return new Set(protectedHeader.crit);
 }
 __name(validateCrit, "validateCrit");
+__name2(validateCrit, "validateCrit");
 var validate_crit_default = validateCrit;
-
-// ../node_modules/jose/dist/browser/lib/validate_algorithms.js
-var validateAlgorithms = /* @__PURE__ */ __name((option, algorithms) => {
+var validateAlgorithms = /* @__PURE__ */ __name2((option, algorithms) => {
   if (algorithms !== void 0 && (!Array.isArray(algorithms) || algorithms.some((s) => typeof s !== "string"))) {
     throw new TypeError(`"${option}" option must be an array of strings`);
   }
@@ -2016,27 +2196,25 @@ var validateAlgorithms = /* @__PURE__ */ __name((option, algorithms) => {
   return new Set(algorithms);
 }, "validateAlgorithms");
 var validate_algorithms_default = validateAlgorithms;
-
-// ../node_modules/jose/dist/browser/runtime/subtle_dsa.js
 function subtleDsa(alg, algorithm) {
-  const hash = `SHA-${alg.slice(-3)}`;
+  const hash2 = `SHA-${alg.slice(-3)}`;
   switch (alg) {
     case "HS256":
     case "HS384":
     case "HS512":
-      return { hash, name: "HMAC" };
+      return { hash: hash2, name: "HMAC" };
     case "PS256":
     case "PS384":
     case "PS512":
-      return { hash, name: "RSA-PSS", saltLength: alg.slice(-3) >> 3 };
+      return { hash: hash2, name: "RSA-PSS", saltLength: alg.slice(-3) >> 3 };
     case "RS256":
     case "RS384":
     case "RS512":
-      return { hash, name: "RSASSA-PKCS1-v1_5" };
+      return { hash: hash2, name: "RSASSA-PKCS1-v1_5" };
     case "ES256":
     case "ES384":
     case "ES512":
-      return { hash, name: "ECDSA", namedCurve: algorithm.namedCurve };
+      return { hash: hash2, name: "ECDSA", namedCurve: algorithm.namedCurve };
     case "Ed25519":
       return { name: "Ed25519" };
     case "EdDSA":
@@ -2046,8 +2224,7 @@ function subtleDsa(alg, algorithm) {
   }
 }
 __name(subtleDsa, "subtleDsa");
-
-// ../node_modules/jose/dist/browser/runtime/get_sign_verify_key.js
+__name2(subtleDsa, "subtleDsa");
 async function getCryptoKey(alg, key, usage) {
   if (usage === "sign") {
     key = await normalize_key_default.normalizePrivateKey(key, alg);
@@ -2068,9 +2245,8 @@ async function getCryptoKey(alg, key, usage) {
   throw new TypeError(invalid_key_input_default(key, ...types, "Uint8Array", "JSON Web Key"));
 }
 __name(getCryptoKey, "getCryptoKey");
-
-// ../node_modules/jose/dist/browser/runtime/verify.js
-var verify = /* @__PURE__ */ __name(async (alg, key, signature, data) => {
+__name2(getCryptoKey, "getCryptoKey");
+var verify = /* @__PURE__ */ __name2(async (alg, key, signature, data) => {
   const cryptoKey = await getCryptoKey(alg, key, "verify");
   check_key_length_default(alg, cryptoKey);
   const algorithm = subtleDsa(alg, cryptoKey.algorithm);
@@ -2081,8 +2257,6 @@ var verify = /* @__PURE__ */ __name(async (alg, key, signature, data) => {
   }
 }, "verify");
 var verify_default = verify;
-
-// ../node_modules/jose/dist/browser/jws/flattened/verify.js
 async function flattenedVerify(jws, key, options) {
   if (!isObject(jws)) {
     throw new JWSInvalid("Flattened JWS must be an object");
@@ -2188,8 +2362,7 @@ async function flattenedVerify(jws, key, options) {
   return result;
 }
 __name(flattenedVerify, "flattenedVerify");
-
-// ../node_modules/jose/dist/browser/jws/compact/verify.js
+__name2(flattenedVerify, "flattenedVerify");
 async function compactVerify(jws, key, options) {
   if (jws instanceof Uint8Array) {
     jws = decoder.decode(jws);
@@ -2209,18 +2382,15 @@ async function compactVerify(jws, key, options) {
   return result;
 }
 __name(compactVerify, "compactVerify");
-
-// ../node_modules/jose/dist/browser/lib/epoch.js
-var epoch_default = /* @__PURE__ */ __name((date) => Math.floor(date.getTime() / 1e3), "default");
-
-// ../node_modules/jose/dist/browser/lib/secs.js
+__name2(compactVerify, "compactVerify");
+var epoch_default = /* @__PURE__ */ __name2((date) => Math.floor(date.getTime() / 1e3), "default");
 var minute = 60;
 var hour = minute * 60;
 var day = hour * 24;
 var week = day * 7;
 var year = day * 365.25;
 var REGEX = /^(\+|\-)? ?(\d+|\d+\.\d+) ?(seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)(?: (ago|from now))?$/i;
-var secs_default = /* @__PURE__ */ __name((str) => {
+var secs_default = /* @__PURE__ */ __name2((str) => {
   const matched = REGEX.exec(str);
   if (!matched || matched[4] && matched[1]) {
     throw new TypeError("Invalid time period format");
@@ -2269,10 +2439,8 @@ var secs_default = /* @__PURE__ */ __name((str) => {
   }
   return numericDate;
 }, "default");
-
-// ../node_modules/jose/dist/browser/lib/jwt_claims_set.js
-var normalizeTyp = /* @__PURE__ */ __name((value) => value.toLowerCase().replace(/^application\//, ""), "normalizeTyp");
-var checkAudiencePresence = /* @__PURE__ */ __name((audPayload, audOption) => {
+var normalizeTyp = /* @__PURE__ */ __name2((value) => value.toLowerCase().replace(/^application\//, ""), "normalizeTyp");
+var checkAudiencePresence = /* @__PURE__ */ __name2((audPayload, audOption) => {
   if (typeof audPayload === "string") {
     return audOption.includes(audPayload);
   }
@@ -2281,7 +2449,7 @@ var checkAudiencePresence = /* @__PURE__ */ __name((audPayload, audOption) => {
   }
   return false;
 }, "checkAudiencePresence");
-var jwt_claims_set_default = /* @__PURE__ */ __name((protectedHeader, encodedPayload, options = {}) => {
+var jwt_claims_set_default = /* @__PURE__ */ __name2((protectedHeader, encodedPayload, options = {}) => {
   let payload;
   try {
     payload = JSON.parse(decoder.decode(encodedPayload));
@@ -2365,8 +2533,6 @@ var jwt_claims_set_default = /* @__PURE__ */ __name((protectedHeader, encodedPay
   }
   return payload;
 }, "default");
-
-// ../node_modules/jose/dist/browser/jwt/verify.js
 async function jwtVerify(jwt, key, options) {
   const verified = await compactVerify(jwt, key, options);
   if (verified.protectedHeader.crit?.includes("b64") && verified.protectedHeader.b64 === false) {
@@ -2380,8 +2546,7 @@ async function jwtVerify(jwt, key, options) {
   return result;
 }
 __name(jwtVerify, "jwtVerify");
-
-// ../node_modules/jose/dist/browser/jwks/local.js
+__name2(jwtVerify, "jwtVerify");
 function getKtyFromAlg(alg) {
   switch (typeof alg === "string" && alg.slice(0, 2)) {
     case "RS":
@@ -2396,14 +2561,17 @@ function getKtyFromAlg(alg) {
   }
 }
 __name(getKtyFromAlg, "getKtyFromAlg");
+__name2(getKtyFromAlg, "getKtyFromAlg");
 function isJWKSLike(jwks2) {
   return jwks2 && typeof jwks2 === "object" && Array.isArray(jwks2.keys) && jwks2.keys.every(isJWKLike);
 }
 __name(isJWKSLike, "isJWKSLike");
+__name2(isJWKSLike, "isJWKSLike");
 function isJWKLike(key) {
   return isObject(key);
 }
 __name(isJWKLike, "isJWKLike");
+__name2(isJWKLike, "isJWKLike");
 function clone(obj) {
   if (typeof structuredClone === "function") {
     return structuredClone(obj);
@@ -2411,9 +2579,13 @@ function clone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 __name(clone, "clone");
+__name2(clone, "clone");
 var LocalJWKSet = class {
   static {
     __name(this, "LocalJWKSet");
+  }
+  static {
+    __name2(this, "LocalJWKSet");
   }
   constructor(jwks2) {
     this._cached = /* @__PURE__ */ new WeakMap();
@@ -2495,12 +2667,13 @@ async function importWithAlgCache(cache, jwk, alg) {
   return cached[alg];
 }
 __name(importWithAlgCache, "importWithAlgCache");
+__name2(importWithAlgCache, "importWithAlgCache");
 function createLocalJWKSet(jwks2) {
   const set = new LocalJWKSet(jwks2);
-  const localJWKSet = /* @__PURE__ */ __name(async (protectedHeader, token) => set.getKey(protectedHeader, token), "localJWKSet");
+  const localJWKSet = /* @__PURE__ */ __name2(async (protectedHeader, token) => set.getKey(protectedHeader, token), "localJWKSet");
   Object.defineProperties(localJWKSet, {
     jwks: {
-      value: /* @__PURE__ */ __name(() => clone(set._jwks), "value"),
+      value: /* @__PURE__ */ __name2(() => clone(set._jwks), "value"),
       enumerable: true,
       configurable: false,
       writable: false
@@ -2509,9 +2682,8 @@ function createLocalJWKSet(jwks2) {
   return localJWKSet;
 }
 __name(createLocalJWKSet, "createLocalJWKSet");
-
-// ../node_modules/jose/dist/browser/runtime/fetch_jwks.js
-var fetchJwks = /* @__PURE__ */ __name(async (url, timeout, options) => {
+__name2(createLocalJWKSet, "createLocalJWKSet");
+var fetchJwks = /* @__PURE__ */ __name2(async (url, timeout, options) => {
   let controller;
   let id;
   let timedOut = false;
@@ -2543,12 +2715,11 @@ var fetchJwks = /* @__PURE__ */ __name(async (url, timeout, options) => {
   }
 }, "fetchJwks");
 var fetch_jwks_default = fetchJwks;
-
-// ../node_modules/jose/dist/browser/jwks/remote.js
 function isCloudflareWorkers() {
   return typeof WebSocketPair !== "undefined" || typeof navigator !== "undefined" && true || typeof EdgeRuntime !== "undefined" && EdgeRuntime === "vercel";
 }
 __name(isCloudflareWorkers, "isCloudflareWorkers");
+__name2(isCloudflareWorkers, "isCloudflareWorkers");
 var USER_AGENT;
 if (typeof navigator === "undefined" || !"Cloudflare-Workers"?.startsWith?.("Mozilla/5.0 ")) {
   const NAME = "jose";
@@ -2569,9 +2740,13 @@ function isFreshJwksCache(input, cacheMaxAge) {
   return true;
 }
 __name(isFreshJwksCache, "isFreshJwksCache");
+__name2(isFreshJwksCache, "isFreshJwksCache");
 var RemoteJWKSet = class {
   static {
     __name(this, "RemoteJWKSet");
+  }
+  static {
+    __name2(this, "RemoteJWKSet");
   }
   constructor(url, options) {
     if (!(url instanceof URL)) {
@@ -2621,11 +2796,11 @@ var RemoteJWKSet = class {
       headers.set("User-Agent", USER_AGENT);
       this._options.headers = Object.fromEntries(headers.entries());
     }
-    this._pendingFetch || (this._pendingFetch = fetch_jwks_default(this._url, this._timeoutDuration, this._options).then((json2) => {
-      this._local = createLocalJWKSet(json2);
+    this._pendingFetch || (this._pendingFetch = fetch_jwks_default(this._url, this._timeoutDuration, this._options).then((json3) => {
+      this._local = createLocalJWKSet(json3);
       if (this._cache) {
         this._cache.uat = Date.now();
-        this._cache.jwks = json2;
+        this._cache.jwks = json3;
       }
       this._jwksTimestamp = Date.now();
       this._pendingFetch = void 0;
@@ -2638,31 +2813,31 @@ var RemoteJWKSet = class {
 };
 function createRemoteJWKSet(url, options) {
   const set = new RemoteJWKSet(url, options);
-  const remoteJWKSet = /* @__PURE__ */ __name(async (protectedHeader, token) => set.getKey(protectedHeader, token), "remoteJWKSet");
+  const remoteJWKSet = /* @__PURE__ */ __name2(async (protectedHeader, token) => set.getKey(protectedHeader, token), "remoteJWKSet");
   Object.defineProperties(remoteJWKSet, {
     coolingDown: {
-      get: /* @__PURE__ */ __name(() => set.coolingDown(), "get"),
+      get: /* @__PURE__ */ __name2(() => set.coolingDown(), "get"),
       enumerable: true,
       configurable: false
     },
     fresh: {
-      get: /* @__PURE__ */ __name(() => set.fresh(), "get"),
+      get: /* @__PURE__ */ __name2(() => set.fresh(), "get"),
       enumerable: true,
       configurable: false
     },
     reload: {
-      value: /* @__PURE__ */ __name(() => set.reload(), "value"),
+      value: /* @__PURE__ */ __name2(() => set.reload(), "value"),
       enumerable: true,
       configurable: false,
       writable: false
     },
     reloading: {
-      get: /* @__PURE__ */ __name(() => !!set._pendingFetch, "get"),
+      get: /* @__PURE__ */ __name2(() => !!set._pendingFetch, "get"),
       enumerable: true,
       configurable: false
     },
     jwks: {
-      value: /* @__PURE__ */ __name(() => set._local?.jwks(), "value"),
+      value: /* @__PURE__ */ __name2(() => set._local?.jwks(), "value"),
       enumerable: true,
       configurable: false,
       writable: false
@@ -2671,29 +2846,32 @@ function createRemoteJWKSet(url, options) {
   return remoteJWKSet;
 }
 __name(createRemoteJWKSet, "createRemoteJWKSet");
-
-// api/_lib/auth.ts
+__name2(createRemoteJWKSet, "createRemoteJWKSet");
 var JWKS_URL = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 var jwks = createRemoteJWKSet(new URL(JWKS_URL));
 var AuthError = class extends Error {
+  static {
+    __name(this, "AuthError");
+  }
   constructor(message2, status = 401) {
     super(message2);
     this.status = status;
     this.name = "AuthError";
   }
+  status;
   static {
-    __name(this, "AuthError");
+    __name2(this, "AuthError");
   }
 };
 async function verifyFirebaseToken(request, env2) {
   const header = request.headers.get("Authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : null;
   if (!token) throw new AuthError("Missing Authorization header");
-  if (!env2.FIREBASE_PROJECT_ID) throw new AuthError("Auth not configured", 403);
+  if (!env2.VITE_FIREBASE_PROJECT_ID) throw new AuthError("Auth not configured", 403);
   try {
     const { payload } = await jwtVerify(token, jwks, {
-      issuer: `https://securetoken.google.com/${env2.FIREBASE_PROJECT_ID}`,
-      audience: env2.FIREBASE_PROJECT_ID
+      issuer: `https://securetoken.google.com/${env2.VITE_FIREBASE_PROJECT_ID}`,
+      audience: env2.VITE_FIREBASE_PROJECT_ID
     });
     if (typeof payload.sub !== "string" || !payload.sub) throw new AuthError("Token missing subject");
     return payload.sub;
@@ -2703,34 +2881,55 @@ async function verifyFirebaseToken(request, env2) {
   }
 }
 __name(verifyFirebaseToken, "verifyFirebaseToken");
-
-// api/_lib/rateLimit.ts
+__name2(verifyFirebaseToken, "verifyFirebaseToken");
 var RateLimitError = class extends Error {
+  static {
+    __name(this, "RateLimitError");
+  }
   constructor(retryAfterSeconds) {
     super("Rate limit exceeded");
     this.retryAfterSeconds = retryAfterSeconds;
     this.name = "RateLimitError";
   }
+  retryAfterSeconds;
   static {
-    __name(this, "RateLimitError");
+    __name2(this, "RateLimitError");
   }
 };
 var WINDOW_SECONDS = 60;
-async function checkRateLimit(uid, env2) {
-  const limit = Number(env2.AI_RATE_LIMIT_PER_MINUTE) || 15;
-  const windowStart = Math.floor(Date.now() / (WINDOW_SECONDS * 1e3));
-  const key = `ratelimit:${uid}:${windowStart}`;
+async function checkWindow(key, limit, env2) {
   const current = Number(await env2.RATE_LIMIT_KV.get(key) ?? "0");
   if (current >= limit) throw new RateLimitError(WINDOW_SECONDS);
   await env2.RATE_LIMIT_KV.put(key, String(current + 1), { expirationTtl: WINDOW_SECONDS + 10 });
 }
+__name(checkWindow, "checkWindow");
+__name2(checkWindow, "checkWindow");
+async function checkRateLimit(uid, env2) {
+  const limit = Number(env2.AI_RATE_LIMIT_PER_MINUTE) || 15;
+  const windowStart = Math.floor(Date.now() / (WINDOW_SECONDS * 1e3));
+  await checkWindow(`ratelimit:${uid}:${windowStart}`, limit, env2);
+}
 __name(checkRateLimit, "checkRateLimit");
-
-// api/ai-chat.ts
+__name2(checkRateLimit, "checkRateLimit");
+async function checkVisionRateLimit(uid, env2) {
+  const limit = Number(env2.AI_VISION_RATE_LIMIT_PER_MINUTE) || 5;
+  const windowStart = Math.floor(Date.now() / (WINDOW_SECONDS * 1e3));
+  await checkWindow(`visionratelimit:${uid}:${windowStart}`, limit, env2);
+}
+__name(checkVisionRateLimit, "checkVisionRateLimit");
+__name2(checkVisionRateLimit, "checkVisionRateLimit");
 var CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization"
+};
+var MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+var ALLOWED_ATTACHMENT_MIME_TYPES = {
+  "image/jpeg": "image",
+  "image/jpg": "image",
+  "image/png": "image",
+  "image/webp": "image",
+  "application/pdf": "pdf"
 };
 function json(status, body, extraHeaders = {}) {
   return new Response(JSON.stringify(body), {
@@ -2739,6 +2938,7 @@ function json(status, body, extraHeaders = {}) {
   });
 }
 __name(json, "json");
+__name2(json, "json");
 function friendlyError(status) {
   if (status === 429) return "The AI service is temporarily busy. Please wait a moment and try again.";
   if (status === 401 || status === 403) return "Authentication error. Please refresh the page and try again.";
@@ -2746,11 +2946,9 @@ function friendlyError(status) {
   return "We're having trouble reaching the AI service. Please try again in a moment.";
 }
 __name(friendlyError, "friendlyError");
-function parseMessages(body) {
-  if (typeof body !== "object" || body === null || !Array.isArray(body.messages)) {
-    throw new Error("messages must be a non-empty array");
-  }
-  const raw = body.messages;
+__name2(friendlyError, "friendlyError");
+function parseMessages(raw) {
+  if (!Array.isArray(raw)) throw new Error("messages must be a non-empty array");
   if (raw.length === 0) throw new Error("messages must be a non-empty array");
   return raw.map((m) => {
     if (typeof m !== "object" || m === null) throw new Error("Invalid message");
@@ -2762,10 +2960,29 @@ function parseMessages(body) {
   });
 }
 __name(parseMessages, "parseMessages");
-var onRequestOptions = /* @__PURE__ */ __name(async () => {
+__name2(parseMessages, "parseMessages");
+function parseAttachment(raw) {
+  if (raw === void 0 || raw === null) return null;
+  if (typeof raw !== "object") throw new Error("Invalid attachment");
+  const { mimeType, dataBase64 } = raw;
+  if (typeof mimeType !== "string" || !(mimeType in ALLOWED_ATTACHMENT_MIME_TYPES)) {
+    throw new Error("Unsupported attachment type. Please upload a JPG, PNG, WEBP, or PDF file.");
+  }
+  if (typeof dataBase64 !== "string" || dataBase64.length === 0) {
+    throw new Error("Attachment data is missing.");
+  }
+  const approxDecodedBytes = Math.floor(dataBase64.length * 3 / 4);
+  if (approxDecodedBytes > MAX_ATTACHMENT_BYTES) {
+    throw new Error(`Attachment is too large. Maximum size is ${MAX_ATTACHMENT_BYTES / 1024 / 1024}MB.`);
+  }
+  return { mimeType, dataBase64, kind: ALLOWED_ATTACHMENT_MIME_TYPES[mimeType] };
+}
+__name(parseAttachment, "parseAttachment");
+__name2(parseAttachment, "parseAttachment");
+var onRequestOptions = /* @__PURE__ */ __name2(async () => {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
 }, "onRequestOptions");
-var onRequestPost = /* @__PURE__ */ __name(async ({ request, env: env2 }) => {
+var onRequestPost = /* @__PURE__ */ __name2(async ({ request, env: env2 }) => {
   let uid;
   try {
     uid = await verifyFirebaseToken(request, env2);
@@ -2773,33 +2990,188 @@ var onRequestPost = /* @__PURE__ */ __name(async ({ request, env: env2 }) => {
     const status = err instanceof AuthError ? err.status : 401;
     return json(status, { error: friendlyError(status) });
   }
+  let messages;
+  let attachment;
   try {
-    await checkRateLimit(uid, env2);
+    const body = await request.json();
+    if (typeof body !== "object" || body === null) throw new Error("Invalid request body");
+    messages = parseMessages(body.messages);
+    attachment = parseAttachment(body.attachment);
+  } catch (err) {
+    console.error("[ai-chat] validation failed:", err);
+    return json(400, { error: err instanceof Error && err.message.length < 200 ? err.message : friendlyError(400) });
+  }
+  try {
+    if (attachment) {
+      await checkVisionRateLimit(uid, env2);
+    } else {
+      await checkRateLimit(uid, env2);
+    }
   } catch (err) {
     if (err instanceof RateLimitError) {
       return json(429, { error: friendlyError(429) }, { "Retry-After": String(err.retryAfterSeconds) });
     }
     console.error("[ai-chat] rate limit check failed:", err);
   }
-  let messages;
   try {
-    messages = parseMessages(await request.json());
-  } catch {
-    return json(400, { error: friendlyError(400) });
-  }
-  try {
-    const result = await routeGenerateResponse(messages, env2);
-    console.log(`[ai-chat] uid=${uid} provider=${result.provider} latencyMs=${result.latencyMs} fallbackCount=${result.fallbackCount}`);
+    const result = attachment ? await routeGenerateVisionResponse(messages, attachment, env2) : await routeGenerateResponse(messages, env2);
+    console.log(`[ai-chat] uid=${uid} provider=${result.provider} latencyMs=${result.latencyMs} fallbackCount=${result.fallbackCount} attachment=${!!attachment}`);
     return json(200, { text: result.text, provider: result.provider });
   } catch (err) {
     const perr = err instanceof ProviderError ? err : null;
     const status = perr?.status && perr.status >= 400 && perr.status < 600 ? perr.status : 502;
     console.error(`[ai-chat] uid=${uid} all providers failed:`, perr?.message ?? err);
-    return json(status, { error: friendlyError(status) });
+    const message2 = attachment ? "Vision analysis is temporarily unavailable. Please try again shortly." : friendlyError(status);
+    return json(status, { error: message2 });
   }
 }, "onRequestPost");
-
-// ../.wrangler/tmp/pages-BvZZ2p/functionsRoutes-0.5983563433708434.mjs
+var kvOf = /* @__PURE__ */ __name2((env2) => env2.NEWS_KV ?? env2.RATE_LIMIT_KV, "kvOf");
+var CACHE_KEY = "news:v1";
+var REFRESH_AFTER_MS = 3 * 60 * 60 * 1e3;
+var KV_TTL_SECONDS = 24 * 60 * 60;
+var MAX_AGE_DAYS = 30;
+var PER_CATEGORY = 12;
+var QUERIES = {
+  scholarships: "scholarship Nigeria students",
+  exams: 'JAMB OR WAEC OR NECO OR UTME OR "post-UTME"',
+  campus: "Nigerian university ASUU OR strike OR resumption OR convocation",
+  fees: '"school fees" Nigeria university OR polytechnic',
+  careers: 'Nigeria graduates internship OR NYSC OR "graduate trainee"'
+};
+var decodeEntities = /* @__PURE__ */ __name2((s) => s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n))).trim(), "decodeEntities");
+var pick = /* @__PURE__ */ __name2((block, tag2) => {
+  const m = block.match(new RegExp(`<${tag2}[^>]*>([\\s\\S]*?)</${tag2}>`, "i"));
+  return m ? decodeEntities(m[1]) : "";
+}, "pick");
+var safeUrl = /* @__PURE__ */ __name2((u) => /^https:\/\//i.test(u) ? u : "", "safeUrl");
+var normTitle = /* @__PURE__ */ __name2((t) => t.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(), "normTitle");
+async function hash(s) {
+  const buf = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].slice(0, 6).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+__name(hash, "hash");
+__name2(hash, "hash");
+function parseGoogleRss(xml, category) {
+  const items = [];
+  const blocks = xml.match(/<item>[\s\S]*?<\/item>/gi) ?? [];
+  for (const b of blocks) {
+    let title2 = pick(b, "title");
+    const url = safeUrl(pick(b, "link"));
+    const date = new Date(pick(b, "pubDate"));
+    let source = pick(b, "source");
+    const m = title2.match(/^(.*)\s+-\s+([^-]+)$/);
+    if (m) {
+      title2 = m[1].trim();
+      if (!source) source = m[2].trim();
+    }
+    if (!title2 || !url || isNaN(date.getTime())) continue;
+    items.push({ title: title2, url, source: source || "News", publishedAt: date.toISOString(), category });
+  }
+  return items;
+}
+__name(parseGoogleRss, "parseGoogleRss");
+__name2(parseGoogleRss, "parseGoogleRss");
+async function fetchGoogle(category) {
+  const q = encodeURIComponent(QUERIES[category] + " when:30d");
+  const url = `https://news.google.com/rss/search?q=${q}&hl=en-NG&gl=NG&ceid=NG:en`;
+  const res = await fetch(url, { headers: { "User-Agent": "StudiByte/1.0" } });
+  if (!res.ok) throw new Error(`google ${category} ${res.status}`);
+  return parseGoogleRss(await res.text(), category);
+}
+__name(fetchGoogle, "fetchGoogle");
+__name2(fetchGoogle, "fetchGoogle");
+async function fetchNewsData(key) {
+  const url = `https://newsdata.io/api/1/latest?apikey=${encodeURIComponent(key)}&country=ng&language=en&category=education`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`newsdata ${res.status}`);
+  const json3 = await res.json();
+  const out = [];
+  for (const r of json3?.results ?? []) {
+    const link = safeUrl(r.link ?? "");
+    const date = /* @__PURE__ */ new Date(String(r.pubDate ?? "").replace(" ", "T") + "Z");
+    if (!r.title || !link || isNaN(date.getTime())) continue;
+    out.push({
+      title: String(r.title).trim(),
+      url: link,
+      source: r.source_name || r.source_id || "News",
+      publishedAt: date.toISOString(),
+      category: "campus"
+    });
+  }
+  return out;
+}
+__name(fetchNewsData, "fetchNewsData");
+__name2(fetchNewsData, "fetchNewsData");
+async function buildNews(env2) {
+  const cats = Object.keys(QUERIES);
+  const jobs = cats.map((c) => fetchGoogle(c));
+  if (env2.NEWSDATA_API_KEY) jobs.push(fetchNewsData(env2.NEWSDATA_API_KEY));
+  const settled = await Promise.allSettled(jobs);
+  const raw = settled.flatMap((s) => s.status === "fulfilled" ? s.value : []);
+  settled.forEach((s) => s.status === "rejected" && console.warn("[news]", String(s.reason)));
+  if (raw.length === 0) throw new Error("all news sources failed");
+  const cutoff = Date.now() - MAX_AGE_DAYS * 864e5;
+  const seen = /* @__PURE__ */ new Set();
+  const counts = {};
+  const items = [];
+  raw.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  for (const it of raw) {
+    if (Date.parse(it.publishedAt) < cutoff) continue;
+    const key = normTitle(it.title);
+    if (seen.has(key)) continue;
+    if ((counts[it.category] ?? 0) >= PER_CATEGORY) continue;
+    seen.add(key);
+    counts[it.category] = (counts[it.category] ?? 0) + 1;
+    items.push({ ...it, id: await hash(it.url) });
+  }
+  return { updatedAt: (/* @__PURE__ */ new Date()).toISOString(), items };
+}
+__name(buildNews, "buildNews");
+__name2(buildNews, "buildNews");
+async function refreshNews(env2) {
+  const payload = await buildNews(env2);
+  await kvOf(env2).put(CACHE_KEY, JSON.stringify(payload), { expirationTtl: KV_TTL_SECONDS });
+  return payload;
+}
+__name(refreshNews, "refreshNews");
+__name2(refreshNews, "refreshNews");
+async function getNews(env2, waitUntil) {
+  const cached = await kvOf(env2).get(CACHE_KEY, "json");
+  if (cached) {
+    const age = Date.now() - Date.parse(cached.updatedAt);
+    if (age > REFRESH_AFTER_MS) {
+      waitUntil(refreshNews(env2).catch((e) => console.warn("[news] refresh failed:", String(e))));
+    }
+    return cached;
+  }
+  return refreshNews(env2);
+}
+__name(getNews, "getNews");
+__name2(getNews, "getNews");
+var CORS_HEADERS2 = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type"
+};
+function json2(status, body, extra = {}) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS2, ...extra }
+  });
+}
+__name(json2, "json2");
+__name2(json2, "json");
+var onRequestOptions2 = /* @__PURE__ */ __name2(async () => new Response(null, { status: 204, headers: CORS_HEADERS2 }), "onRequestOptions");
+var onRequestGet = /* @__PURE__ */ __name2(async ({ env: env2, waitUntil }) => {
+  try {
+    const payload = await getNews(env2, waitUntil);
+    return json2(200, payload, { "Cache-Control": "public, max-age=300" });
+  } catch (err) {
+    console.error("[news] unavailable:", err);
+    return json2(502, { error: "News is unavailable right now" });
+  }
+}, "onRequestGet");
+var onRequest = /* @__PURE__ */ __name2(async () => json2(405, { error: "Method not allowed" }, { Allow: "GET, OPTIONS" }), "onRequest");
 var routes = [
   {
     routePath: "/api/ai-chat",
@@ -2814,10 +3186,29 @@ var routes = [
     method: "POST",
     middlewares: [],
     modules: [onRequestPost]
+  },
+  {
+    routePath: "/api/news",
+    mountPath: "/api",
+    method: "GET",
+    middlewares: [],
+    modules: [onRequestGet]
+  },
+  {
+    routePath: "/api/news",
+    mountPath: "/api",
+    method: "OPTIONS",
+    middlewares: [],
+    modules: [onRequestOptions2]
+  },
+  {
+    routePath: "/api/news",
+    mountPath: "/api",
+    method: "",
+    middlewares: [],
+    modules: [onRequest]
   }
 ];
-
-// ../node_modules/wrangler/node_modules/path-to-regexp/dist.es2015/index.js
 function lexer(str) {
   var tokens = [];
   var i = 0;
@@ -2902,6 +3293,7 @@ function lexer(str) {
   return tokens;
 }
 __name(lexer, "lexer");
+__name2(lexer, "lexer");
 function parse2(str, options) {
   if (options === void 0) {
     options = {};
@@ -2912,18 +3304,18 @@ function parse2(str, options) {
   var key = 0;
   var i = 0;
   var path = "";
-  var tryConsume = /* @__PURE__ */ __name(function(type) {
+  var tryConsume = /* @__PURE__ */ __name2(function(type) {
     if (i < tokens.length && tokens[i].type === type)
       return tokens[i++].value;
   }, "tryConsume");
-  var mustConsume = /* @__PURE__ */ __name(function(type) {
+  var mustConsume = /* @__PURE__ */ __name2(function(type) {
     var value2 = tryConsume(type);
     if (value2 !== void 0)
       return value2;
     var _a2 = tokens[i], nextType = _a2.type, index = _a2.index;
     throw new TypeError("Unexpected ".concat(nextType, " at ").concat(index, ", expected ").concat(type));
   }, "mustConsume");
-  var consumeText = /* @__PURE__ */ __name(function() {
+  var consumeText = /* @__PURE__ */ __name2(function() {
     var result2 = "";
     var value2;
     while (value2 = tryConsume("CHAR") || tryConsume("ESCAPED_CHAR")) {
@@ -2931,7 +3323,7 @@ function parse2(str, options) {
     }
     return result2;
   }, "consumeText");
-  var isSafe = /* @__PURE__ */ __name(function(value2) {
+  var isSafe = /* @__PURE__ */ __name2(function(value2) {
     for (var _i = 0, delimiter_1 = delimiter; _i < delimiter_1.length; _i++) {
       var char2 = delimiter_1[_i];
       if (value2.indexOf(char2) > -1)
@@ -2939,7 +3331,7 @@ function parse2(str, options) {
     }
     return false;
   }, "isSafe");
-  var safePattern = /* @__PURE__ */ __name(function(prefix2) {
+  var safePattern = /* @__PURE__ */ __name2(function(prefix2) {
     var prev = result[result.length - 1];
     var prevText = prefix2 || (prev && typeof prev === "string" ? prev : "");
     if (prev && !prevText) {
@@ -3001,13 +3393,15 @@ function parse2(str, options) {
   }
   return result;
 }
-__name(parse2, "parse");
+__name(parse2, "parse2");
+__name2(parse2, "parse");
 function match(str, options) {
   var keys = [];
   var re = pathToRegexp(str, keys, options);
   return regexpToFunction(re, keys, options);
 }
 __name(match, "match");
+__name2(match, "match");
 function regexpToFunction(re, keys, options) {
   if (options === void 0) {
     options = {};
@@ -3021,7 +3415,7 @@ function regexpToFunction(re, keys, options) {
       return false;
     var path = m[0], index = m.index;
     var params = /* @__PURE__ */ Object.create(null);
-    var _loop_1 = /* @__PURE__ */ __name(function(i2) {
+    var _loop_1 = /* @__PURE__ */ __name2(function(i2) {
       if (m[i2] === void 0)
         return "continue";
       var key = keys[i2 - 1];
@@ -3040,14 +3434,17 @@ function regexpToFunction(re, keys, options) {
   };
 }
 __name(regexpToFunction, "regexpToFunction");
+__name2(regexpToFunction, "regexpToFunction");
 function escapeString(str) {
   return str.replace(/([.+*?=^!:${}()[\]|/\\])/g, "\\$1");
 }
 __name(escapeString, "escapeString");
+__name2(escapeString, "escapeString");
 function flags(options) {
   return options && options.sensitive ? "" : "i";
 }
 __name(flags, "flags");
+__name2(flags, "flags");
 function regexpToRegexp(path, keys) {
   if (!keys)
     return path;
@@ -3068,6 +3465,7 @@ function regexpToRegexp(path, keys) {
   return path;
 }
 __name(regexpToRegexp, "regexpToRegexp");
+__name2(regexpToRegexp, "regexpToRegexp");
 function arrayToRegexp(paths, keys, options) {
   var parts = paths.map(function(path) {
     return pathToRegexp(path, keys, options).source;
@@ -3075,10 +3473,12 @@ function arrayToRegexp(paths, keys, options) {
   return new RegExp("(?:".concat(parts.join("|"), ")"), flags(options));
 }
 __name(arrayToRegexp, "arrayToRegexp");
+__name2(arrayToRegexp, "arrayToRegexp");
 function stringToRegexp(path, keys, options) {
   return tokensToRegexp(parse2(path, options), keys, options);
 }
 __name(stringToRegexp, "stringToRegexp");
+__name2(stringToRegexp, "stringToRegexp");
 function tokensToRegexp(tokens, keys, options) {
   if (options === void 0) {
     options = {};
@@ -3134,6 +3534,7 @@ function tokensToRegexp(tokens, keys, options) {
   return new RegExp(route, flags(options));
 }
 __name(tokensToRegexp, "tokensToRegexp");
+__name2(tokensToRegexp, "tokensToRegexp");
 function pathToRegexp(path, keys, options) {
   if (path instanceof RegExp)
     return regexpToRegexp(path, keys);
@@ -3142,8 +3543,7 @@ function pathToRegexp(path, keys, options) {
   return stringToRegexp(path, keys, options);
 }
 __name(pathToRegexp, "pathToRegexp");
-
-// ../node_modules/wrangler/templates/pages-template-worker.ts
+__name2(pathToRegexp, "pathToRegexp");
 var escapeRegex = /[.+?^${}()|[\]\\]/g;
 function* executeRequest(request) {
   const requestPath = new URL(request.url).pathname;
@@ -3194,13 +3594,14 @@ function* executeRequest(request) {
   }
 }
 __name(executeRequest, "executeRequest");
+__name2(executeRequest, "executeRequest");
 var pages_template_worker_default = {
   async fetch(originalRequest, env2, workerContext) {
     let request = originalRequest;
     const handlerIterator = executeRequest(request);
     let data = {};
     let isFailOpen = false;
-    const next = /* @__PURE__ */ __name(async (input, init) => {
+    const next = /* @__PURE__ */ __name2(async (input, init) => {
       if (input !== void 0) {
         let url = input;
         if (typeof input === "string") {
@@ -3227,7 +3628,7 @@ var pages_template_worker_default = {
           },
           env: env2,
           waitUntil: workerContext.waitUntil.bind(workerContext),
-          passThroughOnException: /* @__PURE__ */ __name(() => {
+          passThroughOnException: /* @__PURE__ */ __name2(() => {
             isFailOpen = true;
           }, "passThroughOnException")
         };
@@ -3255,13 +3656,358 @@ var pages_template_worker_default = {
     }
   }
 };
-var cloneResponse = /* @__PURE__ */ __name((response) => (
+var cloneResponse = /* @__PURE__ */ __name2((response) => (
   // https://fetch.spec.whatwg.org/#null-body-status
   new Response(
     [101, 204, 205, 304].includes(response.status) ? null : response.body,
     response
   )
 ), "cloneResponse");
-export {
-  pages_template_worker_default as default
+var drainBody = /* @__PURE__ */ __name2(async (request, env2, _ctx, middlewareCtx) => {
+  try {
+    return await middlewareCtx.next(request, env2);
+  } finally {
+    try {
+      if (request.body !== null && !request.bodyUsed) {
+        const reader = request.body.getReader();
+        while (!(await reader.read()).done) {
+        }
+      }
+    } catch (e) {
+      console.error("Failed to drain the unused request body.", e);
+    }
+  }
+}, "drainBody");
+var middleware_ensure_req_body_drained_default = drainBody;
+function reduceError(e) {
+  return {
+    name: e?.name,
+    message: e?.message ?? String(e),
+    stack: e?.stack,
+    cause: e?.cause === void 0 ? void 0 : reduceError(e.cause)
+  };
+}
+__name(reduceError, "reduceError");
+__name2(reduceError, "reduceError");
+var jsonError = /* @__PURE__ */ __name2(async (request, env2, _ctx, middlewareCtx) => {
+  try {
+    return await middlewareCtx.next(request, env2);
+  } catch (e) {
+    const error3 = reduceError(e);
+    return Response.json(error3, {
+      status: 500,
+      headers: { "MF-Experimental-Error-Stack": "true" }
+    });
+  }
+}, "jsonError");
+var middleware_miniflare3_json_error_default = jsonError;
+var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
+  middleware_ensure_req_body_drained_default,
+  middleware_miniflare3_json_error_default
+];
+var middleware_insertion_facade_default = pages_template_worker_default;
+var __facade_middleware__ = [];
+function __facade_register__(...args) {
+  __facade_middleware__.push(...args.flat());
+}
+__name(__facade_register__, "__facade_register__");
+__name2(__facade_register__, "__facade_register__");
+function __facade_invokeChain__(request, env2, ctx, dispatch, middlewareChain) {
+  const [head, ...tail] = middlewareChain;
+  const middlewareCtx = {
+    dispatch,
+    next(newRequest, newEnv) {
+      return __facade_invokeChain__(newRequest, newEnv, ctx, dispatch, tail);
+    }
+  };
+  return head(request, env2, ctx, middlewareCtx);
+}
+__name(__facade_invokeChain__, "__facade_invokeChain__");
+__name2(__facade_invokeChain__, "__facade_invokeChain__");
+function __facade_invoke__(request, env2, ctx, dispatch, finalMiddleware) {
+  return __facade_invokeChain__(request, env2, ctx, dispatch, [
+    ...__facade_middleware__,
+    finalMiddleware
+  ]);
+}
+__name(__facade_invoke__, "__facade_invoke__");
+__name2(__facade_invoke__, "__facade_invoke__");
+var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
+  static {
+    __name(this, "___Facade_ScheduledController__");
+  }
+  constructor(scheduledTime, cron, noRetry) {
+    this.scheduledTime = scheduledTime;
+    this.cron = cron;
+    this.#noRetry = noRetry;
+  }
+  scheduledTime;
+  cron;
+  static {
+    __name2(this, "__Facade_ScheduledController__");
+  }
+  #noRetry;
+  noRetry() {
+    if (!(this instanceof ___Facade_ScheduledController__)) {
+      throw new TypeError("Illegal invocation");
+    }
+    this.#noRetry();
+  }
 };
+function wrapExportedHandler(worker) {
+  if (__INTERNAL_WRANGLER_MIDDLEWARE__ === void 0 || __INTERNAL_WRANGLER_MIDDLEWARE__.length === 0) {
+    return worker;
+  }
+  for (const middleware of __INTERNAL_WRANGLER_MIDDLEWARE__) {
+    __facade_register__(middleware);
+  }
+  const fetchDispatcher = /* @__PURE__ */ __name2(function(request, env2, ctx) {
+    if (worker.fetch === void 0) {
+      throw new Error("Handler does not export a fetch() function.");
+    }
+    return worker.fetch(request, env2, ctx);
+  }, "fetchDispatcher");
+  return {
+    ...worker,
+    fetch(request, env2, ctx) {
+      const dispatcher = /* @__PURE__ */ __name2(function(type, init) {
+        if (type === "scheduled" && worker.scheduled !== void 0) {
+          const controller = new __Facade_ScheduledController__(
+            Date.now(),
+            init.cron ?? "",
+            () => {
+            }
+          );
+          return worker.scheduled(controller, env2, ctx);
+        }
+      }, "dispatcher");
+      return __facade_invoke__(request, env2, ctx, dispatcher, fetchDispatcher);
+    }
+  };
+}
+__name(wrapExportedHandler, "wrapExportedHandler");
+__name2(wrapExportedHandler, "wrapExportedHandler");
+function wrapWorkerEntrypoint(klass) {
+  if (__INTERNAL_WRANGLER_MIDDLEWARE__ === void 0 || __INTERNAL_WRANGLER_MIDDLEWARE__.length === 0) {
+    return klass;
+  }
+  for (const middleware of __INTERNAL_WRANGLER_MIDDLEWARE__) {
+    __facade_register__(middleware);
+  }
+  return class extends klass {
+    #fetchDispatcher = /* @__PURE__ */ __name2((request, env2, ctx) => {
+      this.env = env2;
+      this.ctx = ctx;
+      if (super.fetch === void 0) {
+        throw new Error("Entrypoint class does not define a fetch() function.");
+      }
+      return super.fetch(request);
+    }, "#fetchDispatcher");
+    #dispatcher = /* @__PURE__ */ __name2((type, init) => {
+      if (type === "scheduled" && super.scheduled !== void 0) {
+        const controller = new __Facade_ScheduledController__(
+          Date.now(),
+          init.cron ?? "",
+          () => {
+          }
+        );
+        return super.scheduled(controller);
+      }
+    }, "#dispatcher");
+    fetch(request) {
+      return __facade_invoke__(
+        request,
+        this.env,
+        this.ctx,
+        this.#dispatcher,
+        this.#fetchDispatcher
+      );
+    }
+  };
+}
+__name(wrapWorkerEntrypoint, "wrapWorkerEntrypoint");
+__name2(wrapWorkerEntrypoint, "wrapWorkerEntrypoint");
+var WRAPPED_ENTRY;
+if (typeof middleware_insertion_facade_default === "object") {
+  WRAPPED_ENTRY = wrapExportedHandler(middleware_insertion_facade_default);
+} else if (typeof middleware_insertion_facade_default === "function") {
+  WRAPPED_ENTRY = wrapWorkerEntrypoint(middleware_insertion_facade_default);
+}
+var middleware_loader_entry_default = WRAPPED_ENTRY;
+
+// node_modules/wrangler/templates/middleware/middleware-ensure-req-body-drained.ts
+var drainBody2 = /* @__PURE__ */ __name(async (request, env2, _ctx, middlewareCtx) => {
+  try {
+    return await middlewareCtx.next(request, env2);
+  } finally {
+    try {
+      if (request.body !== null && !request.bodyUsed) {
+        const reader = request.body.getReader();
+        while (!(await reader.read()).done) {
+        }
+      }
+    } catch (e) {
+      console.error("Failed to drain the unused request body.", e);
+    }
+  }
+}, "drainBody");
+var middleware_ensure_req_body_drained_default2 = drainBody2;
+
+// node_modules/wrangler/templates/middleware/middleware-miniflare3-json-error.ts
+function reduceError2(e) {
+  return {
+    name: e?.name,
+    message: e?.message ?? String(e),
+    stack: e?.stack,
+    cause: e?.cause === void 0 ? void 0 : reduceError2(e.cause)
+  };
+}
+__name(reduceError2, "reduceError");
+var jsonError2 = /* @__PURE__ */ __name(async (request, env2, _ctx, middlewareCtx) => {
+  try {
+    return await middlewareCtx.next(request, env2);
+  } catch (e) {
+    const error3 = reduceError2(e);
+    return Response.json(error3, {
+      status: 500,
+      headers: { "MF-Experimental-Error-Stack": "true" }
+    });
+  }
+}, "jsonError");
+var middleware_miniflare3_json_error_default2 = jsonError2;
+
+// .wrangler/tmp/bundle-OiLaOm/middleware-insertion-facade.js
+var __INTERNAL_WRANGLER_MIDDLEWARE__2 = [
+  middleware_ensure_req_body_drained_default2,
+  middleware_miniflare3_json_error_default2
+];
+var middleware_insertion_facade_default2 = middleware_loader_entry_default;
+
+// node_modules/wrangler/templates/middleware/common.ts
+var __facade_middleware__2 = [];
+function __facade_register__2(...args) {
+  __facade_middleware__2.push(...args.flat());
+}
+__name(__facade_register__2, "__facade_register__");
+function __facade_invokeChain__2(request, env2, ctx, dispatch, middlewareChain) {
+  const [head, ...tail] = middlewareChain;
+  const middlewareCtx = {
+    dispatch,
+    next(newRequest, newEnv) {
+      return __facade_invokeChain__2(newRequest, newEnv, ctx, dispatch, tail);
+    }
+  };
+  return head(request, env2, ctx, middlewareCtx);
+}
+__name(__facade_invokeChain__2, "__facade_invokeChain__");
+function __facade_invoke__2(request, env2, ctx, dispatch, finalMiddleware) {
+  return __facade_invokeChain__2(request, env2, ctx, dispatch, [
+    ...__facade_middleware__2,
+    finalMiddleware
+  ]);
+}
+__name(__facade_invoke__2, "__facade_invoke__");
+
+// .wrangler/tmp/bundle-OiLaOm/middleware-loader.entry.ts
+var __Facade_ScheduledController__2 = class ___Facade_ScheduledController__2 {
+  constructor(scheduledTime, cron, noRetry) {
+    this.scheduledTime = scheduledTime;
+    this.cron = cron;
+    this.#noRetry = noRetry;
+  }
+  scheduledTime;
+  cron;
+  static {
+    __name(this, "__Facade_ScheduledController__");
+  }
+  #noRetry;
+  noRetry() {
+    if (!(this instanceof ___Facade_ScheduledController__2)) {
+      throw new TypeError("Illegal invocation");
+    }
+    this.#noRetry();
+  }
+};
+function wrapExportedHandler2(worker) {
+  if (__INTERNAL_WRANGLER_MIDDLEWARE__2 === void 0 || __INTERNAL_WRANGLER_MIDDLEWARE__2.length === 0) {
+    return worker;
+  }
+  for (const middleware of __INTERNAL_WRANGLER_MIDDLEWARE__2) {
+    __facade_register__2(middleware);
+  }
+  const fetchDispatcher = /* @__PURE__ */ __name(function(request, env2, ctx) {
+    if (worker.fetch === void 0) {
+      throw new Error("Handler does not export a fetch() function.");
+    }
+    return worker.fetch(request, env2, ctx);
+  }, "fetchDispatcher");
+  return {
+    ...worker,
+    fetch(request, env2, ctx) {
+      const dispatcher = /* @__PURE__ */ __name(function(type, init) {
+        if (type === "scheduled" && worker.scheduled !== void 0) {
+          const controller = new __Facade_ScheduledController__2(
+            Date.now(),
+            init.cron ?? "",
+            () => {
+            }
+          );
+          return worker.scheduled(controller, env2, ctx);
+        }
+      }, "dispatcher");
+      return __facade_invoke__2(request, env2, ctx, dispatcher, fetchDispatcher);
+    }
+  };
+}
+__name(wrapExportedHandler2, "wrapExportedHandler");
+function wrapWorkerEntrypoint2(klass) {
+  if (__INTERNAL_WRANGLER_MIDDLEWARE__2 === void 0 || __INTERNAL_WRANGLER_MIDDLEWARE__2.length === 0) {
+    return klass;
+  }
+  for (const middleware of __INTERNAL_WRANGLER_MIDDLEWARE__2) {
+    __facade_register__2(middleware);
+  }
+  return class extends klass {
+    #fetchDispatcher = /* @__PURE__ */ __name((request, env2, ctx) => {
+      this.env = env2;
+      this.ctx = ctx;
+      if (super.fetch === void 0) {
+        throw new Error("Entrypoint class does not define a fetch() function.");
+      }
+      return super.fetch(request);
+    }, "#fetchDispatcher");
+    #dispatcher = /* @__PURE__ */ __name((type, init) => {
+      if (type === "scheduled" && super.scheduled !== void 0) {
+        const controller = new __Facade_ScheduledController__2(
+          Date.now(),
+          init.cron ?? "",
+          () => {
+          }
+        );
+        return super.scheduled(controller);
+      }
+    }, "#dispatcher");
+    fetch(request) {
+      return __facade_invoke__2(
+        request,
+        this.env,
+        this.ctx,
+        this.#dispatcher,
+        this.#fetchDispatcher
+      );
+    }
+  };
+}
+__name(wrapWorkerEntrypoint2, "wrapWorkerEntrypoint");
+var WRAPPED_ENTRY2;
+if (typeof middleware_insertion_facade_default2 === "object") {
+  WRAPPED_ENTRY2 = wrapExportedHandler2(middleware_insertion_facade_default2);
+} else if (typeof middleware_insertion_facade_default2 === "function") {
+  WRAPPED_ENTRY2 = wrapWorkerEntrypoint2(middleware_insertion_facade_default2);
+}
+var middleware_loader_entry_default2 = WRAPPED_ENTRY2;
+export {
+  __INTERNAL_WRANGLER_MIDDLEWARE__2 as __INTERNAL_WRANGLER_MIDDLEWARE__,
+  middleware_loader_entry_default2 as default
+};
+//# sourceMappingURL=functionsWorker-0.3090633455325038.js.map

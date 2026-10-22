@@ -4,6 +4,38 @@
 
 /* Google Fonts are loaded via index.html */
 
+/* ── Theme tokens ────────────────────────────────────────────────────────
+   :root = light mode defaults. .dark = dark mode overrides, set to the
+   exact values the app used before theming existed, so dark mode is
+   pixel-identical to the pre-theme UI. Components should migrate to these
+   variables (via the surface-*, content-*, line-* Tailwind colors) instead
+   of hardcoding hex/rgba values. */
+:root {
+  color-scheme: light;
+  --bg-base: #ffffff;
+  --bg-surface: #f8f8f8;
+  --bg-elevated: #ffffff;
+  --text-primary: #111111;
+  --text-secondary: #52525b;
+  --text-muted: #8a8a8a;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.14);
+  --nav-bg: rgba(255, 255, 255, 0.85);
+}
+
+.dark {
+  color-scheme: dark;
+  --bg-base: #0a0a0a;
+  --bg-surface: #1a1a1a;
+  --bg-elevated: #2a2a2a;
+  --text-primary: #ffffff;
+  --text-secondary: #a8a8a8;
+  --text-muted: #737373;
+  --border-color: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.1);
+  --nav-bg: rgba(10, 10, 15, 0.85);
+}
+
 @layer base {
   * {
     -webkit-tap-highlight-color: transparent;
@@ -21,8 +53,8 @@
 
   body {
     font-family: 'DM Sans', sans-serif;
-    background-color: #0a0a0a;
-    color: #ffffff;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
     overflow: hidden; /* the document itself never scrolls — only .app-scroll does */
     margin: 0;
   }
@@ -72,9 +104,9 @@
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus {
-    -webkit-box-shadow: 0 0 0 30px #2a2a2a inset !important;
-    -webkit-text-fill-color: #ffffff !important;
-    caret-color: #ffffff;
+    -webkit-box-shadow: 0 0 0 30px var(--bg-elevated) inset !important;
+    -webkit-text-fill-color: var(--text-primary) !important;
+    caret-color: var(--text-primary);
   }
 
   /* Range input styling */
@@ -88,13 +120,6 @@
     padding: 0;
     background: none;
     cursor: pointer;
-  }
-
-  /* Time/date input styling */
-  input[type="time"],
-  input[type="date"],
-  input[type="number"] {
-    color-scheme: dark;
   }
 
   /* Select arrow */

@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
-import { TrendingUp, Timer, ClipboardList, BookOpen, ChevronRight, Sparkles, Star, Brain } from 'lucide-react';
+import { TrendingUp, Timer, ClipboardList, BookOpen, ChevronRight, Sparkles, Star, Brain, Wallet, Layers } from 'lucide-react';
 import { useStore } from '../hooks/useStore';
 import { calculateGPA, getGPAClass } from '../utils/gpa';
 import { useMemo } from 'react';
 // add import
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../routes';
+import { useDueFlashcardCount } from '../hooks/useDueFlashcardCount';
 
 const features = [
   {
@@ -63,11 +64,34 @@ const features = [
     to: ROUTES.app.ai,
     emoji: '🤖',
   },
+  {
+    id: 'budget',
+    icon: Wallet,
+    label: 'Budget Planner',
+    desc: 'Track spending and stay within your budget',
+    color: '#34d399',
+    bg: 'rgba(52,211,153,0.1)',
+    border: 'rgba(52,211,153,0.2)',
+    to: ROUTES.app.budget,
+    emoji: '💰',
+  },
+  {
+    id: 'flashcards',
+    icon: Layers,
+    label: 'Smart Flashcards',
+    desc: 'Auto-made cards and daily revision',
+    color: '#f472b6',
+    bg: 'rgba(244,114,182,0.1)',
+    border: 'rgba(244,114,182,0.2)',
+    to: ROUTES.app.flashcards,
+    emoji: '🧠',
+  },
 ];
 
 export default function More() {
   const { gpaCourses, assignments, materials, activeSemester, activeAcademicYear, profile } = useStore();
   const navigate = useNavigate();
+  const dueFlashcards = useDueFlashcardCount();
   
   const semGPA = useMemo(
     () => gpaCourses.filter(c => c.semester === activeSemester && c.academicYear === activeAcademicYear),
@@ -89,6 +113,7 @@ export default function More() {
     materials:   semMaterials > 0     ? `${semMaterials}`   : null,
     timer:       null,
     ai:          null,
+    flashcards:  dueFlashcards > 0 ? `${dueFlashcards} due` : null,
   };
 
   const initials = profile?.fullName?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'S';

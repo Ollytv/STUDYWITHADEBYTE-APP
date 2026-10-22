@@ -40,7 +40,7 @@ function downloadAsText(filename: string, content: string) {
 function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <button onClick={() => onChange(!value)} className="relative flex-shrink-0 touch-manipulation"
-      style={{ width: 48, height: 26, borderRadius: 13, background: value ? 'linear-gradient(135deg,#22c55e,#059669)' : 'rgba(255,255,255,0.1)', transition: 'background 0.2s', boxShadow: value ? '0 0 12px rgba(34,197,94,0.3)' : 'none' }}>
+      style={{ width: 48, height: 26, borderRadius: 13, background: value ? 'linear-gradient(135deg,#22c55e,#059669)' : 'var(--border-strong)', transition: 'background 0.2s', boxShadow: value ? '0 0 12px rgba(34,197,94,0.3)' : 'none' }}>
       <motion.div className="absolute rounded-full bg-white shadow-lg"
         style={{ width: 18, height: 18, top: 4 }}
         animate={{ left: value ? 26 : 4 }}
@@ -55,7 +55,7 @@ function Section({ title, icon, children, accentColor = '#6b7280' }: {
 }) {
   return (
     <motion.div className="rounded-2xl overflow-hidden"
-      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+      style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}
       initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
       <div className="flex items-center gap-2 px-4 pt-4 pb-2">
         {icon && <span style={{ color: accentColor }}>{icon}</span>}
@@ -77,20 +77,20 @@ function Row({ icon, label, sub, children, onClick, danger = false, iconBg }: {
       onClick={onClick} whileTap={onClick ? { scale: 0.98 } : undefined}
       style={onClick ? { WebkitTapHighlightColor: 'transparent' } : undefined}>
       <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ background: danger ? 'rgba(248,113,113,0.1)' : (iconBg || 'rgba(255,255,255,0.06)') }}>
-        <span style={{ color: danger ? '#f87171' : '#9ca3af' }}>{icon}</span>
+        style={{ background: danger ? 'rgba(248,113,113,0.1)' : (iconBg || 'var(--bg-elevated)') }}>
+        <span style={{ color: danger ? '#f87171' : 'var(--text-secondary)' }}>{icon}</span>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold" style={{ color: danger ? '#f87171' : '#fff' }}>{label}</p>
-        {sub && <p className="text-xs mt-0.5 leading-relaxed" style={{ color: '#4b5563' }}>{sub}</p>}
+        <p className="text-sm font-semibold" style={{ color: danger ? '#f87171' : 'var(--text-primary)' }}>{label}</p>
+        {sub && <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'var(--text-muted)' }}>{sub}</p>}
       </div>
-      {children ?? (onClick && <ChevronRight size={15} style={{ color: '#374151' }} />)}
+      {children ?? (onClick && <ChevronRight size={15} style={{ color: 'var(--text-muted)' }} />)}
     </motion.div>
   );
 }
 
 // ── Divider ────────────────────────────────────────────────────────────────
-const Divider = () => <div className="h-px mx-4" style={{ background: 'rgba(255,255,255,0.05)' }} />;
+const Divider = () => <div className="h-px mx-4" style={{ background: 'var(--border-color)' }} />;
 
 // ── PIN pad ────────────────────────────────────────────────────────────────
 function PinDots({ length, filled }: { length: number; filled: number }) {
@@ -98,7 +98,7 @@ function PinDots({ length, filled }: { length: number; filled: number }) {
     <div className="flex items-center justify-center gap-5 my-8">
       {Array.from({ length }).map((_, i) => (
         <motion.div key={i} className="rounded-full border-2"
-          style={{ width: 18, height: 18, background: i < filled ? '#22c55e' : 'transparent', borderColor: i < filled ? '#22c55e' : '#374151', boxShadow: i < filled ? '0 0 8px rgba(34,197,94,0.5)' : 'none' }}
+          style={{ width: 18, height: 18, background: i < filled ? '#22c55e' : 'transparent', borderColor: i < filled ? '#22c55e' : 'var(--border-strong)', boxShadow: i < filled ? '0 0 8px rgba(34,197,94,0.5)' : 'none' }}
           animate={{ scale: i === filled - 1 ? [1, 1.4, 1] : 1 }} transition={{ duration: 0.15 }} />
       ))}
     </div>
@@ -111,7 +111,7 @@ function PinPad({ onDigit, onDelete }: { onDigit: (d: string) => void; onDelete:
       {keys.map((k, i) => k === '' ? <div key={i} /> : (
         <motion.button key={k} onClick={() => k === '⌫' ? onDelete() : onDigit(k)}
           className="h-16 rounded-2xl text-xl font-black flex items-center justify-center touch-manipulation"
-          style={{ background: k === '⌫' ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: k === '⌫' ? '#6b7280' : '#fff' }}
+          style={{ background: k === '⌫' ? 'var(--bg-elevated)' : 'var(--bg-surface)', border: '1px solid var(--border-color)', color: k === '⌫' ? 'var(--text-muted)' : 'var(--text-primary)' }}
           whileTap={{ scale: 0.88 }}>{k}</motion.button>
       ))}
     </div>
@@ -132,15 +132,15 @@ function LegalModal({
           style={{ background: 'rgba(0,0,0,0.85)' }}
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <motion.div className="flex flex-col flex-1 overflow-hidden rounded-t-3xl mt-12"
-            style={{ background: '#0a0a0f', border: '1px solid rgba(255,255,255,0.08)' }}
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}
             initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'var(--border-color)' }}>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest mb-0.5" style={{ color: accentColor }}>StudiByte</p>
-                <h2 className="text-lg font-black text-white" style={{ fontFamily: 'Georgia, serif' }}>{title}</h2>
+                <h2 className="text-lg font-black text-content-primary" style={{ fontFamily: 'Georgia, serif' }}>{title}</h2>
               </div>
               <div className="flex items-center gap-2">
                 <motion.button
@@ -152,7 +152,7 @@ function LegalModal({
                 </motion.button>
                 <motion.button onClick={onClose}
                   className="w-9 h-9 rounded-xl flex items-center justify-center touch-manipulation"
-                  style={{ background: 'rgba(255,255,255,0.06)', color: '#6b7280' }}
+                  style={{ background: 'var(--bg-surface)', color: 'var(--text-muted)' }}
                   whileTap={{ scale: 0.9 }}>
                   <X size={17} />
                 </motion.button>
@@ -172,19 +172,19 @@ function LegalModal({
 
 // ── Legal content components ───────────────────────────────────────────────
 function LegalH1({ children }: { children: React.ReactNode }) {
-  return <h2 className="text-base font-black text-white" style={{ fontFamily: 'Georgia, serif' }}>{children}</h2>;
+  return <h2 className="text-base font-black text-content-primary" style={{ fontFamily: 'Georgia, serif' }}>{children}</h2>;
 }
-function LegalH2({ children, color = '#9ca3af' }: { children: React.ReactNode; color?: string }) {
+function LegalH2({ children, color = 'var(--text-secondary)' }: { children: React.ReactNode; color?: string }) {
   return <h3 className="text-xs font-black uppercase tracking-widest mt-4 mb-1" style={{ color }}>{children}</h3>;
 }
 function LegalP({ children }: { children: React.ReactNode }) {
-  return <p className="text-sm leading-relaxed" style={{ color: '#9ca3af' }}>{children}</p>;
+  return <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{children}</p>;
 }
 function LegalList({ items }: { items: string[] }) {
   return (
     <ul className="space-y-1.5 mt-1">
       {items.map((item, i) => (
-        <li key={i} className="flex items-start gap-2 text-sm" style={{ color: '#9ca3af' }}>
+        <li key={i} className="flex items-start gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
           <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#22c55e' }} />
           {item}
         </li>
@@ -198,19 +198,19 @@ function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
     <motion.div className="rounded-2xl overflow-hidden"
-      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+      style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}>
       <button className="w-full flex items-center justify-between px-4 py-3.5 text-left touch-manipulation"
         onClick={() => setOpen(o => !o)} style={{ WebkitTapHighlightColor: 'transparent' }}>
-        <p className="text-sm font-bold text-white pr-4">{q}</p>
-        {open ? <ChevronUp size={16} style={{ color: '#22c55e', flexShrink: 0 }} /> : <ChevronDown size={16} style={{ color: '#4b5563', flexShrink: 0 }} />}
+        <p className="text-sm font-bold text-content-primary pr-4">{q}</p>
+        {open ? <ChevronUp size={16} style={{ color: '#22c55e', flexShrink: 0 }} /> : <ChevronDown size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />}
       </button>
       <AnimatePresence>
         {open && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.25 }} style={{ overflow: 'hidden' }}>
             <div className="px-4 pb-4 pt-0">
-              <div className="h-px mb-3" style={{ background: 'rgba(255,255,255,0.06)' }} />
-              <p className="text-sm leading-relaxed" style={{ color: '#9ca3af' }}>{a}</p>
+              <div className="h-px mb-3" style={{ background: 'var(--border-color)' }} />
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{a}</p>
             </div>
           </motion.div>
         )}
@@ -240,8 +240,8 @@ function ContactForm() {
       style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)' }}
       initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
       <div className="text-4xl mb-3">✅</div>
-      <p className="text-base font-black text-white mb-1">Message Sent!</p>
-      <p className="text-sm text-dark-400">We'll respond within 24–48 hours. Thank you for reaching out!</p>
+      <p className="text-base font-black text-content-primary mb-1">Message Sent!</p>
+      <p className="text-sm text-content-secondary">We'll respond within 24–48 hours. Thank you for reaching out!</p>
       <button onClick={() => { setSent(false); setName(''); setEmail(''); setMessage(''); }}
         className="mt-4 text-xs font-bold text-green-400 touch-manipulation">Send another</button>
     </motion.div>
@@ -260,23 +260,23 @@ function ContactForm() {
             className="flex flex-col items-center gap-1.5 py-3 rounded-2xl text-xs font-bold border transition-all touch-manipulation"
             style={type === t.id
               ? { background: 'rgba(34,197,94,0.12)', borderColor: 'rgba(34,197,94,0.3)', color: '#4ade80' }
-              : { background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.07)', color: '#4b5563' }}>
+              : { background: 'var(--bg-surface)', borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}>
             {t.icon}{t.label}
           </button>
         ))}
       </div>
 
-      <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border-color)' }}>
         <input value={name} onChange={e => setName(e.target.value)} placeholder="Your full name"
-          className="w-full px-4 py-3.5 text-sm text-white focus:outline-none border-b"
-          style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.07)', color: '#fff' }} />
+          className="w-full px-4 py-3.5 text-sm focus:outline-none border-b"
+          style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
         <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Your email address" type="email"
-          className="w-full px-4 py-3.5 text-sm text-white focus:outline-none border-b"
-          style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.07)', color: '#fff' }} />
+          className="w-full px-4 py-3.5 text-sm focus:outline-none border-b"
+          style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }} />
         <textarea value={message} onChange={e => setMessage(e.target.value)}
           placeholder={type === 'bug' ? 'Describe the bug: what happened, when, and steps to reproduce...' : type === 'feedback' ? 'Share your thoughts, suggestions, or feature requests...' : 'How can we help you today?'}
-          rows={5} className="w-full px-4 py-3.5 text-sm text-white focus:outline-none resize-none"
-          style={{ background: 'rgba(255,255,255,0.04)', color: '#fff' }} />
+          rows={5} className="w-full px-4 py-3.5 text-sm focus:outline-none resize-none"
+          style={{ background: 'var(--bg-surface)', color: 'var(--text-primary)' }} />
       </div>
 
       <motion.button onClick={handleSend} disabled={!name.trim() || !email.trim() || !message.trim()}
@@ -286,7 +286,7 @@ function ContactForm() {
         <Send size={15} /> Send {type === 'support' ? 'Request' : type === 'feedback' ? 'Feedback' : 'Bug Report'}
       </motion.button>
 
-      <p className="text-center text-xs" style={{ color: '#374151' }}>
+      <p className="text-center text-xs" style={{ color: 'var(--text-muted)' }}>
         We typically respond within 24–48 hours · <span style={{ color: '#22c55e' }}>support@adebyte.tech</span>
       </p>
     </div>
@@ -555,10 +555,10 @@ Q: Is my data secure?
 A: Yes. All data is secured using Firebase with encrypted connections and strict security rules. Only you can access your data.`;
 
   return (
-    <div className="min-h-screen bg-dark-950 pb-36">
+    <div className="min-h-screen bg-surface-base pb-36">
 
       {/* ── STICKY HEADER ───────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-30 backdrop-blur-2xl" style={{ background: 'rgba(10,10,15,0.92)' }}>
+      <div className="sticky top-0 z-30 backdrop-blur-2xl" style={{ background: 'var(--nav-bg)' }}>
       <div className="relative overflow-hidden">
         <div className="absolute inset-0" style={{ background: 'linear-gradient(160deg,rgba(168,85,247,0.12) 0%,rgba(139,92,246,0.05) 40%,transparent 70%)' }} />
         <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full" style={{ background: 'radial-gradient(circle,rgba(168,85,247,0.1) 0%,transparent 70%)' }} />
@@ -567,11 +567,11 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
             <Sparkles size={13} className="text-purple-400" />
             <span className="text-[10px] font-black text-purple-400/80 uppercase tracking-widest">StudiByte · Account</span>
           </motion.div>
-          <motion.h1 className="text-2xl font-black text-white" style={{ fontFamily: 'Georgia, serif', letterSpacing: '-0.5px' }}
+          <motion.h1 className="text-2xl font-black text-content-primary" style={{ fontFamily: 'Georgia, serif', letterSpacing: '-0.5px' }}
             initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.08 }}>
             Settings
           </motion.h1>
-          <motion.p className="text-xs text-dark-400" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
+          <motion.p className="text-xs text-content-secondary" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
             Preferences, account & legal
           </motion.p>
         </div>
@@ -596,17 +596,17 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
               }
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-base font-black text-white">{profile?.fullName || 'Set up profile'}</p>
+              <p className="text-base font-black text-content-primary">{profile?.fullName || 'Set up profile'}</p>
               {profile
                 ? <>
-                    <p className="text-xs text-dark-400 mt-0.5">{profile.department} · {profile.programLevel}</p>
+                    <p className="text-xs text-content-secondary mt-0.5">{profile.department} · {profile.programLevel}</p>
                     {profile.matricNumber && (
                       <span className="text-xs font-mono text-green-400 mt-1 inline-block px-2 py-0.5 rounded-lg" style={{ background: 'rgba(34,197,94,0.1)' }}>
                         {profile.matricNumber}
                       </span>
                     )}
                   </>
-                : <p className="text-xs text-dark-400 mt-0.5">Tap to set up your profile</p>
+                : <p className="text-xs text-content-secondary mt-0.5">Tap to set up your profile</p>
               }
             </div>
             <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(34,197,94,0.1)' }}>
@@ -705,12 +705,12 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
             <Star size={11} className="text-green-400" fill="#22c55e" />
             <p className="text-[10px] font-black text-green-400 uppercase tracking-widest">ADEBYTE TECH</p>
           </div>
-          <p className="text-sm font-bold text-white mb-0.5">StudiByte v3.0.0</p>
-          <p className="text-xs text-dark-400">Built by AdebyteTech · First Edition</p>
+          <p className="text-sm font-bold text-content-primary mb-0.5">StudiByte v3.0.0</p>
+          <p className="text-xs text-content-secondary">Built by AdebyteTech · First Edition</p>
           <p className="text-xs mt-1" style={{ color: '#22c55e' }}>support@adebyte.tech</p>
         </motion.div>
 
-        <p className="text-center text-xs pb-2" style={{ color: '#374151' }}>
+        <p className="text-center text-xs pb-2" style={{ color: 'var(--text-muted)' }}>
           © {new Date().getFullYear()} ADEBYTE TECH · Made with 💚 for students
         </p>
       </div>
@@ -771,13 +771,13 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
         <div className="rounded-2xl p-5 relative overflow-hidden" style={{ background: 'linear-gradient(135deg,rgba(251,191,36,0.1),rgba(245,158,11,0.05))', border: '1px solid rgba(251,191,36,0.2)' }}>
           <div className="absolute right-4 top-4 text-5xl opacity-15">🎓</div>
           <p className="text-[10px] font-black text-yellow-400 uppercase tracking-widest mb-2">ADEBYTE TECH</p>
-          <h2 className="text-2xl font-black text-white mb-1" style={{ fontFamily: 'Georgia, serif' }}>StudiByte</h2>
-          <p className="text-xs text-dark-400">Your Academic Companion · v3.0.0</p>
+          <h2 className="text-2xl font-black text-content-primary mb-1" style={{ fontFamily: 'Georgia, serif' }}>StudiByte</h2>
+          <p className="text-xs text-content-secondary">Your Academic Companion · v3.0.0</p>
         </div>
         <LegalP>StudiByte is a modern student productivity and educational platform built to help students stay organized, productive, and academically focused. The app combines smart technology with learning tools to improve student performance and simplify academic life.</LegalP>
         <LegalH2 color="#fbbf24">The Founder</LegalH2>
-        <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-          <p className="text-sm font-black text-white mb-1">Adegbite Olaoluwa</p>
+        <div className="rounded-2xl p-4" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}>
+          <p className="text-sm font-black text-content-primary mb-1">Adegbite Olaoluwa</p>
           <p className="text-xs font-bold text-yellow-400 mb-2">ADEBYTE TECH · Web/App Developer</p>
           <LegalP>Founded by Adegbite Olaoluwa, popularly known as ADEBYTE TECH, StudiByte was created from a passion for technology and impacting knowledge positively. ADEBYTE TECH is a Web/App Developer who has partnered with thousands of business owners and educationists to create impactful digital solutions and educational experiences.</LegalP>
         </div>
@@ -787,8 +787,8 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
         <LegalP>StudiByte aims to empower students with the tools they need to succeed academically, stay organized, and build productive habits that last beyond university.</LegalP>
         <div className="rounded-2xl p-4 mt-2" style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)' }}>
           <p className="text-xs font-black text-green-400 mb-1">GET IN TOUCH</p>
-          <p className="text-sm text-white">support@adebyte.tech</p>
-          <p className="text-xs text-dark-400 mt-0.5">We love hearing from students!</p>
+          <p className="text-sm text-content-primary">support@adebyte.tech</p>
+          <p className="text-xs text-content-secondary mt-0.5">We love hearing from students!</p>
         </div>
       </LegalModal>
 
@@ -799,18 +799,18 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
         downloadContent="StudiByte Support\nEmail: support@adebyte.tech\nResponse time: 24-48 hours\nADEBYTE TECH | Founded by Adegbite Olaoluwa">
         <div className="rounded-2xl p-4" style={{ background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.2)' }}>
           <p className="text-xs font-black text-purple-400 uppercase tracking-widest mb-1">We're here for you</p>
-          <p className="text-sm text-white font-bold">Student-centered support, always.</p>
-          <p className="text-xs text-dark-400 mt-0.5">Average response time: 24–48 hours</p>
+          <p className="text-sm text-content-primary font-bold">Student-centered support, always.</p>
+          <p className="text-xs text-content-secondary mt-0.5">Average response time: 24–48 hours</p>
         </div>
         <ContactForm />
-        <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-          <p className="text-xs font-black text-dark-400 uppercase tracking-widest mb-3">Direct Contact</p>
+        <div className="rounded-2xl p-4" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}>
+          <p className="text-xs font-black text-content-secondary uppercase tracking-widest mb-3">Direct Contact</p>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(34,197,94,0.1)' }}>
               <Mail size={14} className="text-green-400" />
             </div>
             <div>
-              <p className="text-xs text-dark-400">Email Support</p>
+              <p className="text-xs text-content-secondary">Email Support</p>
               <p className="text-sm font-bold text-green-400">support@adebyte.tech</p>
             </div>
           </div>
@@ -819,8 +819,8 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
               <ExternalLink size={14} className="text-blue-400" />
             </div>
             <div>
-              <p className="text-xs text-dark-400">Developer</p>
-              <p className="text-sm font-bold text-white">ADEBYTE TECH</p>
+              <p className="text-xs text-content-secondary">Developer</p>
+              <p className="text-sm font-bold text-content-primary">ADEBYTE TECH</p>
             </div>
           </div>
         </div>
@@ -832,7 +832,7 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
         downloadName="StudiByte-FAQ.txt" downloadContent={FAQ_TEXT}>
         <div className="rounded-2xl p-4" style={{ background: 'rgba(251,146,60,0.08)', border: '1px solid rgba(251,146,60,0.2)' }}>
           <p className="text-xs font-black text-orange-400 uppercase tracking-widest mb-1">Quick Answers</p>
-          <p className="text-sm text-white font-bold">Everything you need to know about StudiByte</p>
+          <p className="text-sm text-content-primary font-bold">Everything you need to know about StudiByte</p>
         </div>
         <div className="space-y-2">
           {[
@@ -855,7 +855,7 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
         downloadName="StudiByte-Disclaimer.txt" downloadContent={DISCLAIMER_TEXT}>
         <div className="rounded-2xl p-4" style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)' }}>
           <p className="text-xs font-black text-red-400 uppercase tracking-widest mb-1">Important Notices</p>
-          <p className="text-sm text-white font-bold">Please read carefully before using StudiByte</p>
+          <p className="text-sm text-content-primary font-bold">Please read carefully before using StudiByte</p>
         </div>
         <LegalH2 color="#f87171">1. Educational Support Tool</LegalH2>
         <LegalP>StudiByte is a supplementary educational tool designed to support your academic journey. It is not a replacement for academic instruction, personal effort, professional tutoring, or official academic advice from your institution.</LegalP>
@@ -873,8 +873,8 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
         } />
         <LegalH2 color="#f87171">7. Availability</LegalH2>
         <LegalP>StudiByte is provided "as is". We do not guarantee uninterrupted service availability. Maintenance, updates, or technical issues may temporarily affect access to the app.</LegalP>
-        <div className="rounded-2xl p-4 mt-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-          <p className="text-xs text-dark-400 leading-relaxed">For questions or concerns, contact <span style={{ color: '#22c55e' }}>support@adebyte.tech</span>. ADEBYTE TECH · Founded by Adegbite Olaoluwa.</p>
+        <div className="rounded-2xl p-4 mt-2" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}>
+          <p className="text-xs text-content-secondary leading-relaxed">For questions or concerns, contact <span style={{ color: '#22c55e' }}>support@adebyte.tech</span>. ADEBYTE TECH · Founded by Adegbite Olaoluwa.</p>
         </div>
       </LegalModal>
 
@@ -885,7 +885,7 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
             style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.2)' }}>
             <LogOut size={28} className="text-red-400" />
           </div>
-          <p className="text-center text-sm text-dark-300 leading-relaxed">
+          <p className="text-center text-sm text-content-secondary leading-relaxed">
             You'll be signed out and taken to the login screen. Your data stays safe in the cloud.
           </p>
           <div className="flex flex-row items-stretch gap-3">
@@ -899,7 +899,7 @@ A: Yes. All data is secured using Firebase with encrypted connections and strict
       <Modal isOpen={showPinSetup} onClose={() => setShowPinSetup(false)}
         title={pinStep === 'set' ? 'Set Your PIN' : 'Confirm PIN'}>
         <div className="pb-8">
-          <p className="text-center text-sm text-dark-400 px-5 mt-2">
+          <p className="text-center text-sm text-content-secondary px-5 mt-2">
             {pinStep === 'set' ? 'Enter a 4-digit PIN to secure your account.' : 'Re-enter your PIN to confirm.'}
           </p>
           <PinDots length={4} filled={pinInput.length} />

@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Calendar, Grid3X3, List, X } from 'lucide-react';
+import { Plus, Search, Calendar, Grid3X3, List, X, ScanLine } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useState, useMemo } from 'react';
 import { useStore } from '../hooks/useStore';
 import { ClassCard } from '../components/timetable/ClassCard';
@@ -9,6 +10,7 @@ import { SemesterSwitcher } from '../components/ui/SemesterSwitcher';
 import { getDayOrder, formatTimeRange } from '../utils/time';
 import { DayOfWeek } from '../types';
 import { getColorClasses } from '../utils/colors';
+import { ROUTES } from '../routes';
 
 const DAYS  = getDayOrder();
 const HOURS = Array.from({ length: 13 }, (_, i) => i + 7); // 7am–7pm
@@ -19,6 +21,9 @@ export default function Timetable() {
     showAddClass, setShowAddClass, editingClass, setEditingClass,
     activeSemester, activeAcademicYear,
   } = useStore();
+
+  const navigate = useNavigate();
+  const goImport = () => navigate(ROUTES.app.import);
 
   const [selectedDay, setSelectedDay] = useState<DayOfWeek | 'All'>('All');
   const [searchQuery, setSearchQuery]  = useState('');
@@ -90,6 +95,16 @@ export default function Timetable() {
                 {viewMode === 'list' ? <Grid3X3 size={15} /> : <List size={15} />}
               </motion.button>
 
+              {/* Import from photo / PDF */}
+              <motion.button
+                onClick={goImport}
+                aria-label="Import timetable from photo or PDF"
+                className="w-9 h-9 rounded-xl flex items-center justify-center touch-manipulation"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)', color: '#6b7280' }}
+                whileTap={{ scale: 0.9 }}>
+                <ScanLine size={15} />
+              </motion.button>
+
               {/* Add button */}
               <motion.button
                 onClick={() => { setEditingClass(null); setShowAddClass(true); }}
@@ -158,7 +173,7 @@ export default function Timetable() {
               <EmptyState icon={<Calendar size={28} />}
                 title={searchQuery ? 'No matches found' : 'No classes yet'}
                 description={searchQuery ? 'Try a different search term.' : 'Build your timetable by adding your courses.'}
-                action={{ label: 'Add your first class', onClick: () => setShowAddClass(true) }}
+                action={{ label: searchQuery ? 'Clear search' : 'Import from photo or PDF', onClick: searchQuery ? () => setSearchQuery('') : goImport }}
               />
             </motion.div>
           ) : viewMode === 'grid' ? (

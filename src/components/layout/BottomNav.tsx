@@ -26,7 +26,7 @@ export default function BottomNav() {
         }
       `}</style>
       <div className="absolute inset-0 backdrop-blur-2xl"
-        style={{ background: 'rgba(10,10,15,0.85)', borderTop: '1px solid rgba(255,255,255,0.06)' }}
+        style={{ background: 'var(--nav-bg)', borderTop: '1px solid var(--border-color)' }}
       />
       <div className="relative flex items-end justify-around max-w-lg mx-auto px-3"
         style={{ paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_PADDING_Y}px)`, paddingTop: NAV_PADDING_Y }}
@@ -63,7 +63,7 @@ export default function BottomNav() {
                   size={20}
                   strokeWidth={isActive ? 2.2 : 1.7}
                   className="transition-colors duration-200"
-                  style={{ color: isActive ? '#4ade80' : '#4b5563' }}
+                  style={{ color: isActive ? '#4ade80' : 'var(--text-muted)' }}
                 />
                 {isActive && (
                   <motion.div
@@ -78,7 +78,7 @@ export default function BottomNav() {
               <span
                 className="text-[9px] font-semibold tracking-wide transition-colors duration-200"
                 style={{
-                  color: isActive ? '#4ade80' : '#4b5563',
+                  color: isActive ? '#4ade80' : 'var(--text-muted)',
                   fontFamily: 'system-ui, sans-serif',
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',

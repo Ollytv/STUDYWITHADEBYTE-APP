@@ -28,6 +28,9 @@ export const ROUTES = {
     ai: '/app/ai',
     examPrep: '/app/exam-prep',
     squads: '/app/squads',
+    budget: '/app/budget',
+    flashcards: '/app/flashcards',
+    news: '/app/news',
   },
 } as const;
 
@@ -40,7 +43,8 @@ export const PUBLIC_PATHS: string[] = [
 export const INNER_APP_PATHS: string[] = [
   ROUTES.app.gpa, ROUTES.app.timer, ROUTES.app.assignments,
   ROUTES.app.materials, ROUTES.app.ai, ROUTES.app.import,
-  ROUTES.app.examPrep, ROUTES.app.squads,
+  ROUTES.app.examPrep, ROUTES.app.squads, ROUTES.app.budget,
+  ROUTES.app.flashcards,
 ];
 
 // Prefix patterns for dynamic inner-app routes that aren't in the static

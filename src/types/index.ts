@@ -326,3 +326,83 @@ export interface SquadDailyCompletion {
   completedUids: string[];
   allCompleted: boolean;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STUDENT BUDGET PLANNER
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type ExpenseCategory =
+  | 'transport' | 'food' | 'accommodation' | 'data' | 'academics' | 'other';
+
+export interface ExpenseCategoryMeta {
+  value: ExpenseCategory;
+  label: string;
+  emoji: string;
+  color: string;   // accent hex — used for chips, bars and tinted backgrounds
+}
+
+/** Single source of truth for category labels/colours. Add an entry to extend. */
+export const EXPENSE_CATEGORY_META: ExpenseCategoryMeta[] = [
+  { value: 'transport',     label: 'Transport',       emoji: '🚌', color: '#60a5fa' },
+  { value: 'food',          label: 'Food',            emoji: '🍲', color: '#fb923c' },
+  { value: 'accommodation', label: 'Accommodation',   emoji: '🏠', color: '#a78bfa' },
+  { value: 'data',          label: 'Data & Airtime',  emoji: '📶', color: '#22d3ee' },
+  { value: 'academics',     label: 'Books & Printing', emoji: '📚', color: '#fbbf24' },
+  { value: 'other',         label: 'Other',           emoji: '🧾', color: '#9ca3af' },
+];
+
+export const EXPENSE_CATEGORIES: ExpenseCategory[] = EXPENSE_CATEGORY_META.map(m => m.value);
+
+export function getExpenseCategoryMeta(value: ExpenseCategory): ExpenseCategoryMeta {
+  return EXPENSE_CATEGORY_META.find(m => m.value === value)
+    ?? EXPENSE_CATEGORY_META[EXPENSE_CATEGORY_META.length - 1];
+}
+
+export interface Expense {
+  id: string;
+  amount: number;          // Naira, positive, max 2 decimal places
+  category: ExpenseCategory;
+  date: string;            // local calendar day, YYYY-MM-DD
+  note?: string;
+  createdAt: string;
+}
+
+/** One budget applied to every month. 0 / missing limit = "no limit set". */
+export interface BudgetSettings {
+  monthlyTotal: number;
+  categoryLimits: Partial<Record<ExpenseCategory, number>>;
+}
+
+export const DEFAULT_BUDGET: BudgetSettings = { monthlyTotal: 0, categoryLimits: {} };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SMART FLASHCARDS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type FlashcardGrade = 'forgot' | 'hard' | 'easy';
+
+/** Field length caps — enforced in the DB layer and by the UI inputs. */
+export const FLASHCARD_LIMITS = { front: 300, back: 600, deck: 40 } as const;
+
+export interface Flashcard {
+  id: string;
+  deck: string;              // course code or custom name, e.g. "BIO101"
+  front: string;             // question / prompt
+  back: string;              // answer
+  // ── Spaced-repetition state ──
+  dueDate: string;           // local day (YYYY-MM-DD) the card is next due
+  intervalDays: number;      // current gap between reviews; 0 = new or just forgotten
+  ease: number;              // growth multiplier, kept within 1.3–3.0
+  reps: number;              // consecutive successful reviews
+  lapses: number;            // times the card was forgotten
+  lastReviewedAt?: string;   // ISO timestamp; absent = never reviewed (a "new" card)
+  createdAt: string;
+}
+
+/** Daily-review streak. Stored once per user at users/{uid}/meta/flashcardStats. */
+export interface FlashcardStats {
+  streak: number;
+  lastReviewDate: string;    // YYYY-MM-DD, '' if the user has never reviewed
+}
+
+export const DEFAULT_FLASHCARD_STATS: FlashcardStats = { streak: 0, lastReviewDate: '' };

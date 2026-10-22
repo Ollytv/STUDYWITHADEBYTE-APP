@@ -28,7 +28,10 @@ const Materials   = lazy(() => import('./pages/Materials'));
 const AIAssistant = lazy(() => import('./pages/AIAssistant'));
 const ExamPrep    = lazy(() => import('./pages/ExamPrep'));
 const Squads      = lazy(() => import('./pages/Squads'));
+const Budget      = lazy(() => import('./pages/Budget'));
+const Flashcards  = lazy(() => import('./pages/Flashcards'));
 const SquadJoinPage = lazy(() => import('./pages/SquadJoinPage'));
+const News        = lazy(() => import('./pages/News'));
 
 const About    = lazy(() => import('./pages/public/About'));
 const Features = lazy(() => import('./pages/public/Features'));
@@ -61,11 +64,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (settings?.theme === 'light') {
-      document.documentElement.classList.remove('dark');
-    } else {
-      document.documentElement.classList.add('dark');
-    }
+    document.documentElement.classList.toggle('dark', settings?.theme === 'dark');
   }, [settings?.theme]);
 
   // ── Gate 1: Splash ────────────────────────────────────────────────────
@@ -76,7 +75,7 @@ export default function App() {
   // ── Gate 1.5: Admin routes — entirely independent of student auth state ──
   if (ADMIN_PATHS.includes(location.pathname)) {
     return (
-      <div className="dark bg-dark-950 app-shell">
+      <div className="app-shell bg-surface-base">
         <div className="app-scroll">
           <Suspense fallback={<SplashScreen />}>
             <Routes>
@@ -99,7 +98,7 @@ export default function App() {
   // ── Gate 2: Logged out — public marketing site + auth ──────────────────
   if (!currentUser) {
     return (
-      <div className="dark bg-dark-950 app-shell">
+      <div className="app-shell bg-surface-base">
         <div className="app-scroll">
           <Suspense fallback={<SplashScreen />}>
             <Routes>
@@ -127,7 +126,7 @@ export default function App() {
   // ── Gate 3: Logged in, no profile yet → Onboarding ─────────────────────
   if (!hasProfile) {
     return (
-      <div className="dark bg-dark-950 app-shell">
+      <div className="app-shell bg-surface-base">
         <div className="app-scroll">
           <Routes>
             <Route path={ROUTES.onboarding} element={<Onboarding />} />
@@ -150,14 +149,13 @@ export default function App() {
 }
 
 function MainApp() {
-  const { settings } = useStore();
   const { alert, dismissAlert } = useNotifications();
   const location = useLocation();
 
   const showBottomNav = !isInnerAppPath(location.pathname);
 
   return (
-    <div className={`app-shell bg-dark-950 ${settings?.theme === 'dark' ? 'dark' : ''}`}>
+    <div className="app-shell bg-surface-base">
       <NotificationAlert visible={alert.visible} payload={alert.payload} onDismiss={dismissAlert} />
       <InstallPrompt />
       <UpdateToast />
@@ -179,6 +177,9 @@ function MainApp() {
             <Route path="exam-prep"   element={<ExamPrep />} />
             <Route path="squads"      element={<Squads />} />
             <Route path="squads/join/:squadId" element={<SquadJoinPage />} />
+            <Route path="budget"      element={<Budget />} />
+            <Route path="flashcards"  element={<Flashcards />} />
+            <Route path="news"        element={<News />} />
             <Route path="*" element={<Navigate to={ROUTES.app.root} replace />} />
           </Routes>
         </Suspense>

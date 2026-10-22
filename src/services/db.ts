@@ -8,6 +8,8 @@ import { db as firestore, auth } from './firebase';
 import {
   CourseClass, AttendanceRecord, StudentProfile,
   AppSettings, GPACourse, Assignment, StudySession, CourseMaterial,
+  Expense, BudgetSettings, ExpenseCategory, EXPENSE_CATEGORIES, DEFAULT_BUDGET,
+  Flashcard, FlashcardStats, FLASHCARD_LIMITS, DEFAULT_FLASHCARD_STATS,
 } from '../types';
 
 // ── Environment-safe logger ───────────────────────────────────────────────────
@@ -135,6 +137,7 @@ const LIMITS = {
   fullName:     100,
   department:   100,
   matricNumber: 30,
+  expenseNote:  200,
 };
 
 function truncate(value: string | undefined, max: number): string {
@@ -313,6 +316,137 @@ export async function deleteMaterial(id: string): Promise<void> {
   await remove('materials', id);
 }
 
+// ── Expenses & Budget ─────────────────────────────────────────────────────────
+// Expenses: users/{uid}/expenses/{id}. Budget: single doc at users/{uid}/meta/budget.
+const MAX_AMOUNT = 1_000_000_000; // ₦1bn — far beyond any real student figure
+
+/** Positive, finite, 2dp, capped. Throws on anything unusable. */
+function cleanAmount(value: unknown): number {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) throw new Error('Enter an amount greater than zero.');
+  return Math.round(Math.min(n, MAX_AMOUNT) * 100) / 100;
+}
+
+/** Non-negative variant for budget limits, where 0 means "no limit". */
+function cleanLimit(value: unknown): number {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.round(Math.min(n, MAX_AMOUNT) * 100) / 100;
+}
+
+export async function getAllExpenses(): Promise<Expense[]> {
+  return getAll<Expense>('expenses');
+}
+
+export async function saveExpense(e: Expense): Promise<void> {
+  if (!EXPENSE_CATEGORIES.includes(e.category)) throw new Error('Invalid expense category.');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(e.date)) throw new Error('Invalid expense date.');
+  const safe: Expense = {
+    ...e,
+    amount: cleanAmount(e.amount),
+    note:   truncate(e.note, LIMITS.expenseNote),
+  };
+  await save('expenses', safe);
+}
+
+export async function deleteExpense(id: string): Promise<void> {
+  await remove('expenses', id);
+}
+
+export async function getBudget(): Promise<BudgetSettings> {
+  const snap = await getDoc(userDoc('meta', 'budget'));
+  return snap.exists() ? normaliseBudget(snap.data()) : DEFAULT_BUDGET;
+}
+
+export async function saveBudget(b: BudgetSettings): Promise<void> {
+  // merge:false replaces the doc, so clearing a category limit actually removes it.
+  await setDoc(userDoc('meta', 'budget'), {
+    ...normaliseBudget(b),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+function normaliseBudget(raw: unknown): BudgetSettings {
+  const r = (raw ?? {}) as Partial<BudgetSettings>;
+  const categoryLimits: Partial<Record<ExpenseCategory, number>> = {};
+  for (const cat of EXPENSE_CATEGORIES) {
+    const v = cleanLimit(r.categoryLimits?.[cat]);
+    if (v > 0) categoryLimits[cat] = v;
+  }
+  return { monthlyTotal: cleanLimit(r.monthlyTotal), categoryLimits };
+}
+
+// ── Flashcards ────────────────────────────────────────────────────────────────
+// Cards: users/{uid}/flashcards/{id}. Streak: single doc at users/{uid}/meta/flashcardStats.
+// Written with setDoc directly (not save()) so line breaks inside answers survive —
+// save() collapses all whitespace, which would flatten multi-line answers.
+
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+function cleanFlashcard(c: Flashcard): Flashcard {
+  const front = truncate(c.front?.trim(), FLASHCARD_LIMITS.front);
+  const back  = truncate(c.back?.trim(),  FLASHCARD_LIMITS.back);
+  if (!front || !back) throw new Error('A flashcard needs both a question and an answer.');
+  if (!ISO_DAY.test(c.dueDate)) throw new Error('Invalid flashcard due date.');
+  const int = (v: unknown, lo: number, hi: number) => Math.min(hi, Math.max(lo, Math.round(Number(v)) || 0));
+  const ease = Number(c.ease);
+  return {
+    ...c,
+    deck: truncate(c.deck?.trim().replace(/\s+/g, ' '), FLASHCARD_LIMITS.deck) || 'General',
+    front,
+    back,
+    intervalDays: int(c.intervalDays, 0, 365),
+    ease:         Number.isFinite(ease) ? Math.min(3, Math.max(1.3, ease)) : 2.5,
+    reps:         int(c.reps, 0, 100_000),
+    lapses:       int(c.lapses, 0, 100_000),
+  };
+}
+
+function flashcardData(c: Flashcard) {
+  return { ...stripUndefined(cleanFlashcard(c)), updatedAt: serverTimestamp() };
+}
+
+export async function getAllFlashcards(): Promise<Flashcard[]> {
+  return getAll<Flashcard>('flashcards');
+}
+
+export async function saveFlashcard(c: Flashcard): Promise<void> {
+  await setDoc(userDoc('flashcards', c.id), flashcardData(c), { merge: true });
+}
+
+/** Atomic bulk save (AI-generated decks). Chunked to stay under Firestore's 500-write batch limit. */
+export async function saveFlashcards(cards: Flashcard[]): Promise<void> {
+  for (let i = 0; i < cards.length; i += 400) {
+    const batch = writeBatch(firestore);
+    cards.slice(i, i + 400).forEach(c => batch.set(userDoc('flashcards', c.id), flashcardData(c), { merge: true }));
+    await batch.commit();
+  }
+}
+
+export async function deleteFlashcard(id: string): Promise<void> {
+  await remove('flashcards', id);
+}
+
+export async function deleteFlashcards(ids: string[]): Promise<void> {
+  for (let i = 0; i < ids.length; i += 400) {
+    const batch = writeBatch(firestore);
+    ids.slice(i, i + 400).forEach(id => batch.delete(userDoc('flashcards', id)));
+    await batch.commit();
+  }
+}
+
+function normaliseFlashcardStats(raw: unknown): FlashcardStats {
+  const r = (raw ?? {}) as Partial<FlashcardStats>;
+  return {
+    streak: Math.max(0, Math.round(Number(r.streak)) || 0),
+    lastReviewDate: typeof r.lastReviewDate === 'string' && ISO_DAY.test(r.lastReviewDate) ? r.lastReviewDate : '',
+  };
+}
+
+export async function saveFlashcardStats(s: FlashcardStats): Promise<void> {
+  await setDoc(userDoc('meta', 'flashcardStats'), { ...normaliseFlashcardStats(s), updatedAt: serverTimestamp() });
+}
+
 // ── Real-time listeners ───────────────────────────────────────────────────────
 export function listenToClasses(
   callback: (classes: CourseClass[]) => void
@@ -346,9 +480,53 @@ export function listenToMaterials(
   });
 }
 
+export function listenToExpenses(
+  callback: (expenses: Expense[]) => void,
+  onError?: (error: unknown) => void
+): Unsubscribe {
+  return onSnapshot(
+    userCol('expenses'),
+    snap => callback(snap.docs.map(d => d.data() as Expense)),
+    err => { logError('listenToExpenses', err); onError?.(err); }
+  );
+}
+
+export function listenToBudget(
+  callback: (budget: BudgetSettings) => void,
+  onError?: (error: unknown) => void
+): Unsubscribe {
+  return onSnapshot(
+    userDoc('meta', 'budget'),
+    snap => callback(snap.exists() ? normaliseBudget(snap.data()) : DEFAULT_BUDGET),
+    err => { logError('listenToBudget', err); onError?.(err); }
+  );
+}
+
+export function listenToFlashcards(
+  callback: (cards: Flashcard[]) => void,
+  onError?: (error: unknown) => void
+): Unsubscribe {
+  return onSnapshot(
+    userCol('flashcards'),
+    snap => callback(snap.docs.map(d => d.data() as Flashcard)),
+    err => { logError('listenToFlashcards', err); onError?.(err); }
+  );
+}
+
+export function listenToFlashcardStats(
+  callback: (stats: FlashcardStats) => void,
+  onError?: (error: unknown) => void
+): Unsubscribe {
+  return onSnapshot(
+    userDoc('meta', 'flashcardStats'),
+    snap => callback(snap.exists() ? normaliseFlashcardStats(snap.data()) : DEFAULT_FLASHCARD_STATS),
+    err => { logError('listenToFlashcardStats', err); onError?.(err); }
+  );
+}
+
 // ── Export / Clear ────────────────────────────────────────────────────────────
 export async function exportAllData(): Promise<string> {
-  const [classes, attendance, gpaCourses, assignments, studySessions, materials, profile] =
+  const [classes, attendance, gpaCourses, assignments, studySessions, materials, profile, expenses, budget, flashcards, flashcardStats] =
     await Promise.all([
       getAllClasses(),
       getAll<AttendanceRecord>('attendance'),
@@ -357,17 +535,22 @@ export async function exportAllData(): Promise<string> {
       getAllStudySessions(),
       getAllMaterials(),
       getProfile(),
+      getAllExpenses(),
+      getBudget(),
+      getAllFlashcards(),
+      getDoc(userDoc('meta', 'flashcardStats')).then(s => (s.exists() ? normaliseFlashcardStats(s.data()) : DEFAULT_FLASHCARD_STATS)),
     ]);
   return JSON.stringify({
     exportDate: new Date().toISOString(),
     version:    3,
     classes, attendance, gpaCourses, assignments,
     studySessions, materials, profile,
+    expenses, budget, flashcards, flashcardStats,
   }, null, 2);
 }
 
 export async function clearAllData(): Promise<void> {
-  const cols = ['classes', 'attendance', 'gpaCourses', 'assignments', 'studySessions', 'materials'];
+  const cols = ['classes', 'attendance', 'gpaCourses', 'assignments', 'studySessions', 'materials', 'expenses', 'flashcards'];
   await Promise.all(cols.map(async col => {
     const snap = await getDocs(userCol(col));
     if (snap.docs.length === 0) return;
@@ -375,4 +558,6 @@ export async function clearAllData(): Promise<void> {
     snap.docs.forEach(d => batch.delete(d.ref));
     await batch.commit();
   }));
+  await deleteDoc(userDoc('meta', 'budget'));
+  await deleteDoc(userDoc('meta', 'flashcardStats'));
 }

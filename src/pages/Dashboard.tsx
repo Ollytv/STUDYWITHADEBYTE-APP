@@ -16,6 +16,7 @@ import { ROUTES } from '../routes';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db, auth } from '../services/firebase';
 import { TodaysBytes } from '../components/TodaysBytes';
+import { CampusPulseCard } from '../components/news/CampusPulseCard';
 import { setByteCompleted } from '../services/examService';
 
 function todayISO(): string {
@@ -126,10 +127,10 @@ export default function Dashboard() {
   const greeting   = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <div className="min-h-screen bg-dark-950 pb-28">
+    <div className="min-h-screen bg-surface-base pb-28">
 
       {/* ── STICKY HERO HEADER ──────────────────────────────────────────── */}
-      <div className="sticky top-0 z-30 backdrop-blur-2xl" style={{ background: 'rgba(10,10,15,0.92)' }}>
+      <div className="sticky top-0 z-30 backdrop-blur-2xl" style={{ background: 'var(--nav-bg)' }}>
       <div className="relative overflow-hidden">
         {/* Gradient background */}
         <div className="absolute inset-0"
@@ -152,7 +153,7 @@ export default function Dashboard() {
                 {greeting} 👋
               </motion.p>
               <motion.h1
-                className="text-2xl font-black text-white"
+                className="text-2xl font-black text-content-primary"
                 style={{ fontFamily: 'Georgia, serif', letterSpacing: '-0.5px' }}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -161,7 +162,7 @@ export default function Dashboard() {
                 {firstName ? firstName : 'StudyWithAdebyte'}
               </motion.h1>
               <motion.p
-                className="text-xs text-dark-400 mt-0.5"
+                className="text-xs text-content-secondary mt-0.5"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
@@ -177,14 +178,14 @@ export default function Dashboard() {
               <motion.button
                 onClick={() => setShowNotifications(true)}
                 className="relative w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)' }}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.18, type: 'spring', stiffness: 300 }}
                 whileTap={{ scale: 0.9 }}
                 aria-label="Notifications"
               >
-                <Bell size={18} className="text-dark-300" />
+                <Bell size={18} className="text-content-secondary" />
                 {unreadCount > 0 && (
                   <span
                     className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[9px] font-black text-dark-950"
@@ -222,7 +223,7 @@ export default function Dashboard() {
                   )}
                 </div>
                 {/* Online indicator */}
-                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-green-400 border-2 border-dark-950" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-green-400 border-2" style={{ borderColor: 'var(--bg-base)' }} />
               </motion.button>
             </div>
           </div>
@@ -246,7 +247,7 @@ export default function Dashboard() {
             <Zap size={11} className="text-green-400" />
             <span className="text-[10px] font-bold text-green-400 uppercase tracking-widest">Daily Motivation</span>
           </div>
-          <p className="text-sm font-medium text-white/90 leading-relaxed">{motivation.text}</p>
+          <p className="text-sm font-medium text-content-primary leading-relaxed">{motivation.text}</p>
         </div>
       </motion.div>
 
@@ -309,7 +310,7 @@ export default function Dashboard() {
                   {s.sub}
                 </span>
               </div>
-              <p className="text-2xl font-black text-white" style={{ fontFamily: 'Georgia, serif' }}>{s.value}</p>
+              <p className="text-2xl font-black text-content-primary" style={{ fontFamily: 'Georgia, serif' }}>{s.value}</p>
               <p className="text-xs mt-0.5" style={{ color: `${s.color}aa` }}>{s.label}</p>
             </motion.div>
           ))}
@@ -340,14 +341,14 @@ export default function Dashboard() {
                 {isClassNow(nextClass.startTime, nextClass.endTime) ? '● Happening Now' : 'Next Class'}
               </span>
             </div>
-            <p className="text-base font-bold text-white mb-0.5">{nextClass.courseName}</p>
-            <p className="text-xs text-dark-400">{nextClass.venue} • {nextClass.startTime} – {nextClass.endTime}</p>
+            <p className="text-base font-bold text-content-primary mb-0.5">{nextClass.courseName}</p>
+            <p className="text-xs text-content-secondary">{nextClass.venue} • {nextClass.startTime} – {nextClass.endTime}</p>
             {!isClassNow(nextClass.startTime, nextClass.endTime) && (
               <div className="mt-2 flex items-baseline gap-1.5">
                 <span className="text-3xl font-black text-green-400" style={{ fontFamily: 'Georgia, serif' }}>
                   {formatCountdown(getMinutesUntilClass(nextClass.startTime))}
                 </span>
-                <span className="text-sm text-dark-400">away</span>
+                <span className="text-sm text-content-secondary">away</span>
               </div>
             )}
           </motion.div>
@@ -366,8 +367,8 @@ export default function Dashboard() {
       <div className="px-5 mb-5">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-base font-black text-white" style={{ fontFamily: 'Georgia, serif' }}>Today's Classes</h2>
-            <p className="text-xs text-dark-500">{today} · {todayClasses.length} scheduled</p>
+            <h2 className="text-base font-black text-content-primary" style={{ fontFamily: 'Georgia, serif' }}>Today's Classes</h2>
+            <p className="text-xs text-content-muted">{today} · {todayClasses.length} scheduled</p>
           </div>
          
           <button onClick={() => navigate(ROUTES.app.timetable)}
@@ -379,11 +380,11 @@ export default function Dashboard() {
         {todayClasses.length === 0 ? (
           <motion.div
             className="rounded-2xl p-6 text-center"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)' }}
+            style={{ background: 'var(--bg-surface)', border: '1px dashed var(--border-strong)' }}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
           >
             <div className="text-3xl mb-2">🎉</div>
-            <p className="text-sm text-dark-400 mb-3">No classes today — enjoy your break!</p>
+            <p className="text-sm text-content-secondary mb-3">No classes today — enjoy your break!</p>
             <button
               onClick={() => setShowAddClass(true)}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-green-400 border border-green-500/30 px-3 py-2 rounded-xl touch-manipulation"
@@ -409,11 +410,16 @@ export default function Dashboard() {
         )}
       </div>
 
+      {/* ── CAMPUS PULSE (education news) ─────────────────────────────────── */}
+      <div className="px-5 mb-5">
+        <CampusPulseCard onSeeAll={() => navigate(ROUTES.app.news)} />
+      </div>
+
       {/* ── QUICK ACCESS ─────────────────────────────────────────────────── */}
       <div className="px-5">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-black text-white" style={{ fontFamily: 'Georgia, serif' }}>Quick Access</h2>
-          <BookOpen size={14} className="text-dark-600" />
+          <h2 className="text-base font-black text-content-primary" style={{ fontFamily: 'Georgia, serif' }}>Quick Access</h2>
+          <BookOpen size={14} className="text-content-muted" />
         </div>
         <div className="grid grid-cols-2 gap-3 pb-2">
           {[
@@ -440,7 +446,7 @@ export default function Dashboard() {
                 style={{ background: `${item.color}25` }}>
                 <item.icon size={18} style={{ color: item.color }} />
               </div>
-              <p className="text-sm font-bold text-white">{item.label}</p>
+              <p className="text-sm font-bold text-content-primary">{item.label}</p>
             </motion.button>
           ))}
         </div>
@@ -462,7 +468,7 @@ export default function Dashboard() {
             />
             <motion.div
               className="relative w-full max-w-sm h-full overflow-y-auto px-4 pt-safe pb-6"
-              style={{ background: '#0a0a0f', borderLeft: '1px solid rgba(255,255,255,0.06)' }}
+              style={{ background: 'var(--bg-elevated)', borderLeft: '1px solid var(--border-color)' }}
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
@@ -471,7 +477,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-end pt-4 pb-2">
                 <button
                   onClick={() => setShowNotifications(false)}
-                  className="w-8 h-8 rounded-xl bg-dark-800 border border-white/8 flex items-center justify-center text-dark-400"
+                  className="w-8 h-8 rounded-xl bg-surface-card border border-line-subtle flex items-center justify-center text-content-secondary"
                   aria-label="Close notifications"
                 >
                   <X size={14} />
