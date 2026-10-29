@@ -4,6 +4,7 @@ import { useStore } from './hooks/useStore';
 import { useNotifications } from './hooks/useNotifications';
 import { ROUTES, PUBLIC_PATHS, ADMIN_PATHS, isInnerAppPath } from './routes';
 import { RequireAdmin } from './components/admin/RequireAdmin';
+import { useAdSense, isAdEligiblePath } from './hooks/useAdSense';
 import BottomNav from './components/layout/BottomNav';
 import { NotificationAlert } from './components/ui/NotificationAlert';
 import InstallPrompt from './components/ui/InstallPrompt';
@@ -66,6 +67,9 @@ export default function App() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', settings?.theme === 'dark');
   }, [settings?.theme]);
+
+  // Ads: signed-out visitors on public content pages only, never inside the app.
+  useAdSense(!currentUser && isAdEligiblePath(location.pathname));
 
   // ── Gate 1: Splash ────────────────────────────────────────────────────
   if (!splashDone || authLoading) {

@@ -90,7 +90,7 @@ export default function About() {
               {
                 icon: Heart, color: '#f87171', delay: 0.14,
                 title: 'Commitment',
-                desc: 'We are committed to building StudiByte in the open, with student feedback at the centre of every decision. We do not serve advertising inside the app. We do not sell user data. We do not put essential academic features behind a paywall.',
+                desc: 'We are committed to building StudiByte in the open, with student feedback at the centre of every decision. We do not show advertising inside the signed-in app. We do not sell user data. We do not put essential academic features behind a paywall.',
               },
             ].map(item => (
               <motion.div key={item.title}
@@ -120,7 +120,7 @@ export default function About() {
             StudiByte currently provides ten integrated academic tools, all accessible from a single account with no app store installation required.
           </p>
           <div className="grid grid-cols-2 gap-3">
-            <ValueCard icon={Brain}      color="#a855f7" delay={0}    title="AI Study Assistant"   desc="Powered by Google Gemini. Explains concepts, summarises notes, generates practice questions across all subjects." />
+            <ValueCard icon={Brain}      color="#a855f7" delay={0}    title="AI Study Assistant"   desc="Powered by Google Gemini, with backup AI providers. Explains concepts, summarises notes, generates practice questions across all subjects." />
             <ValueCard icon={Zap}        color="#fbbf24" delay={0.05} title="GPA Tracker"          desc="Real-time GPA and CGPA calculation supporting 3.0, 4.0, and 5.0 grading scales." />
             <ValueCard icon={CheckCircle} color="#34d399" delay={0.1} title="Attendance Monitor"   desc="Track every class, monitor your percentage per course, get warned before you fall below the minimum." />
             <ValueCard icon={Sparkles}   color="#22d3ee" delay={0.15} title="Smart Timetable"      desc="AI-powered import from PDFs and screenshots, with push notifications before each lecture." />

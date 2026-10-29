@@ -111,13 +111,16 @@ export function Contact() {
 }
 
 // ── Privacy ───────────────────────────────────────────────────────────────────
+// Update these dates when the policy text actually changes (they used to show today's date automatically).
+const PRIVACY_LAST_UPDATED = '29 October 2026';
+
 export function Privacy() {
   const sections = [
     {
       title: 'What data StudiByte collects',
       content: `When you create a StudiByte account, we collect your email address and full name. These are used solely to create and identify your account. We do not collect any information beyond what you voluntarily enter into the platform — your timetable, GPA records, attendance history, assignment details, and uploaded materials are all data you create and control.
 
-We do not collect device information beyond what Firebase Authentication requires for secure login. We do not collect location data. We do not use tracking cookies or third-party analytics that identify individual users.`,
+We do not collect device information beyond what Firebase Authentication requires for secure login. We do not collect location data. StudiByte itself does not use tracking cookies or analytics that identify individual users. Cookies set by Google on our public pages for advertising are described in the “Advertising and cookies” section below.`,
     },
     {
       title: 'How your data is stored',
@@ -129,13 +132,17 @@ Firestore security rules ensure that your data is accessible only to your authen
       title: 'How your data is used',
       content: `Your data is used solely to provide the features of StudiByte to you. We use your timetable data to generate reminders. We use your course scores to calculate your GPA. We use your attendance records to show your percentage per course. We use your uploaded materials to display them to you.
 
-We do not use your data for advertising. We do not use your academic performance data to profile you. We do not sell, rent, or share your data with any third party for any commercial purpose.`,
+We do not use your data for advertising. We do not use your academic performance data to profile you. We do not sell or rent your data. Your data is shared only with the service providers needed to run StudiByte — Google Firebase for storage and sign-in, and the AI providers described below — and only for that purpose.`,
     },
     {
       title: 'AI and data',
-      content: `When you use the AI Study Assistant, your messages are sent to Google Gemini via a secure serverless function. Your conversation content is used only to generate the AI's response in that session. StudiByte does not store AI conversation content for model training purposes and does not share it with third parties beyond what is required for the Gemini API to function.
+      content: `When you use the AI Study Assistant, your messages, and any image or PDF you attach, are sent through a secure serverless function to an AI provider to generate the response. We try Google Gemini first. If it is unavailable, the request may be handled by a backup provider: Groq, DeepSeek, or OpenRouter (for image and PDF attachments, Gemini or OpenRouter). StudiByte does not use your conversations to train any model, but each provider handles the data it receives under its own terms and privacy policy, so please avoid entering sensitive personal information into the assistant.
 
 Conversations are saved to your Firestore account so you can revisit them, and you can delete any conversation at any time.`,
+    },
+    {
+      title: 'Advertising and cookies',
+      content: `Our public pages — for example the homepage, Features, FAQ, About, and the study guides — may display ads served by Google AdSense. Google and its partners use cookies and similar technologies to serve ads based on your visits to this site and other websites. You can opt out of personalised advertising at adssettings.google.com, and you can learn more about how Google uses data from sites that use its services at policies.google.com/technologies/ads.\n\nAds are not shown inside the signed-in StudiByte app, and we do not give advertisers access to your account or academic data.`,
     },
     {
       title: 'Data deletion',
@@ -150,7 +157,7 @@ Conversations are saved to your Firestore account so you can revisit them, and y
   return (
     <PublicLayout
       title="StudiByte Privacy Policy — How We Handle Your Academic Data"
-      description="StudiByte privacy policy: what data we collect, how it is stored in Firebase, how it is used, and your rights including data deletion. We do not sell or share your data."
+      description="StudiByte privacy policy: what data we collect, how it is stored in Firebase, how it is used, and your rights including data deletion. We do not sell your data."
     >
       <div className="max-w-2xl mx-auto px-5">
         <section className="py-16">
@@ -162,7 +169,7 @@ Conversations are saved to your Firestore account so you can revisit them, and y
           </motion.h1>
           <motion.p className="text-sm text-dark-400 font-body leading-relaxed"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
-            Last updated: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+            Last updated: {PRIVACY_LAST_UPDATED}
           </motion.p>
         </section>
 
@@ -190,6 +197,8 @@ Conversations are saved to your Firestore account so you can revisit them, and y
 }
 
 // ── Terms ─────────────────────────────────────────────────────────────────────
+const TERMS_LAST_UPDATED = '29 October 2026';
+
 export function Terms() {
   const sections = [
     {
@@ -248,7 +257,7 @@ We reserve the right to suspend or terminate accounts that violate these terms.`
           </motion.h1>
           <motion.p className="text-sm text-dark-400 font-body leading-relaxed"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
-            Last updated: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+            Last updated: {TERMS_LAST_UPDATED}
           </motion.p>
         </section>
 

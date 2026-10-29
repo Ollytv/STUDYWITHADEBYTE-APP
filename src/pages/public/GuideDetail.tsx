@@ -1,4 +1,5 @@
 import { useParams, Navigate, Link } from 'react-router-dom';
+import PublicLayout from '../../components/public/PublicLayout';
 import { GUIDES } from '../../data/guides';
 
 export default function GuideDetail() {
@@ -10,19 +11,23 @@ export default function GuideDetail() {
   }
 
   return (
-    <main className="max-w-2xl mx-auto px-6 py-16">
-      <Link to="/guides" className="text-sm text-white/50 hover:text-white/80">
-        ← All guides
-      </Link>
+    <PublicLayout title={`${guide.title} | StudiByte Guides`} description={guide.description}>
+      <div className="max-w-2xl mx-auto px-6 py-16">
+        <Link to="/guides" className="text-sm text-white/50 hover:text-white/80">
+          ← All guides
+        </Link>
 
-      <h1 className="text-3xl font-bold text-white mt-4 mb-2">{guide.title}</h1>
-      <p className="text-white/60 mb-8">{guide.description}</p>
+        <article>
+          <h1 className="text-3xl font-bold text-white mt-4 mb-2">{guide.title}</h1>
+          <p className="text-white/60 mb-8">{guide.description}</p>
 
-      <article className="space-y-5 text-white/85 leading-relaxed">
-        {guide.content.map((paragraph, i) => (
-          <p key={i}>{paragraph}</p>
-        ))}
-      </article>
-    </main>
+          <div className="space-y-5 text-white/85 leading-relaxed">
+            {guide.content.map((paragraph, i) => (
+              <p key={i}>{paragraph}</p>
+            ))}
+          </div>
+        </article>
+      </div>
+    </PublicLayout>
   );
 }

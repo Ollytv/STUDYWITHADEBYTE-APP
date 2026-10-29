@@ -1,6 +1,6 @@
 // src/pages/public/FAQ.tsx
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ChevronDown, ArrowRight } from 'lucide-react';
 import PublicLayout from '../../components/public/PublicLayout';
@@ -36,7 +36,7 @@ const CATEGORIES = [
   {
     label: 'AI Assistant',
     items: [
-      { q: 'How does the AI Study Assistant work?', a: 'The AI assistant is powered by Google Gemini. You type a question or request — explaining a concept, summarising notes, generating practice questions, or working through a problem — and the assistant responds with a structured, formatted answer. It supports markdown, code blocks, tables, and numbered steps so answers are readable and well-organised.' },
+      { q: 'How does the AI Study Assistant work?', a: 'The AI assistant is powered by Google Gemini, with backup AI providers if Gemini is unavailable. You type a question or request — explaining a concept, summarising notes, generating practice questions, or working through a problem — and the assistant responds with a structured, formatted answer. It supports markdown, code blocks, tables, and numbered steps so answers are readable and well-organised.' },
       { q: 'Does the AI write assignments for me?', a: 'No. The StudiByte AI is designed for academic learning support, not academic dishonesty. It will help you understand concepts, break down problems, and think more clearly — but it will not write your assignments, complete take-home tests, or generate work for submission. Using AI to submit work as your own violates the academic integrity policies of most institutions.' },
       { q: 'What subjects can the AI help with?', a: 'The AI assistant covers all academic subjects including mathematics, physics, chemistry, biology, computer science and programming, engineering, economics, business, law, history, literature, geography, and more. If you can phrase a question clearly, the AI can help you work through it.' },
       { q: 'Are my AI conversations saved?', a: 'Yes. Conversations are saved to your Firestore account so you can revisit previous explanations and continue where you left off. You can delete individual conversations at any time from the conversation history panel in the AI assistant.' },
@@ -53,7 +53,7 @@ const CATEGORIES = [
   {
     label: 'Privacy & Security',
     items: [
-      { q: 'Is my data private?', a: 'Yes. Your academic data is stored in Firebase with strict Firestore security rules that ensure no user can access another user\'s data. StudiByte does not serve advertising inside the app, does not sell your data, and does not share your information with third parties. Your GPA, attendance, materials, and profile are visible only to you.' },
+      { q: 'Is my data private?', a: 'Yes. Your academic data is stored in Firebase with strict Firestore security rules that ensure no user can access another user\'s data. StudiByte does not show advertising inside the signed-in app and does not sell your data. Your information is shared only with the services that run the app: Google Firebase for storage and sign-in, and the AI providers that generate answers to your questions (see the Privacy Policy). Your GPA, attendance, materials, and profile are visible only to you.' },
       { q: 'Does StudiByte work offline?', a: 'Yes. StudiByte uses Firestore offline persistence, which means your timetable, GPA, assignments, and previously viewed materials remain accessible without an internet connection. Changes made offline sync automatically when you reconnect.' },
       { q: 'Can I delete my account and data?', a: 'Yes. You can delete your account at any time from the Settings page. Deleting your account permanently removes all your data from Firestore including your profile, timetable, GPA records, attendance history, assignments, and uploaded materials. StudiByte does not retain copies of deleted user data.' },
       { q: 'Is my data available across multiple devices?', a: 'Yes. Because all data is stored in Firebase, everything syncs across every device where you are signed in. Your timetable, GPA records, and materials are always available on your phone and your laptop simultaneously, with no manual syncing required.' },
@@ -63,26 +63,24 @@ const CATEGORIES = [
 
 function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
   const [open, setOpen] = useState(false);
+  const panelId = `faq-panel-${index}`;
   return (
     <motion.div className="border-b border-white/6"
       initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }} transition={{ delay: index * 0.02 }}>
-      <button onClick={() => setOpen(o => !o)}
+      <button onClick={() => setOpen(o => !o)} aria-expanded={open} aria-controls={panelId}
         className="w-full flex items-center justify-between py-4 text-left gap-3 touch-manipulation">
         <span className="text-sm font-semibold text-white font-body leading-snug">{q}</span>
-        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.22 }} className="flex-shrink-0">
-          <ChevronDown size={14} className="text-dark-500" />
-        </motion.div>
+        <ChevronDown size={14}
+          className={`text-dark-500 flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden">
-            <p className="pb-4 text-sm text-dark-400 font-body leading-relaxed pr-6">{a}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* The answer is ALWAYS in the page so search engines can read it; it is only collapsed visually. */}
+      <div id={panelId} role="region" aria-hidden={!open}
+        className={`grid transition-[grid-template-rows] duration-200 ease-out ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+        <div className="overflow-hidden">
+          <p className="pb-4 text-sm text-dark-400 font-body leading-relaxed pr-6">{a}</p>
+        </div>
+      </div>
     </motion.div>
   );
 }

@@ -21,7 +21,7 @@ const FEATURES = [
     icon: Brain, color: '#a855f7',
     title: 'AI Study Assistant',
     tagline: 'Academic support at any hour.',
-    desc: 'The StudiByte AI assistant is powered by Google Gemini and scoped specifically to academic use. It explains concepts across all subjects — from calculus to contract law — summarises lecture notes, generates practice quiz questions, and works through quantitative problems step by step. It is not a homework-completion tool; it is a learning aid that helps you understand material more deeply so you can produce better work yourself.',
+    desc: 'The StudiByte AI assistant is powered by Google Gemini (with backup AI providers) and scoped specifically to academic use. It explains concepts across all subjects — from calculus to contract law — summarises lecture notes, generates practice quiz questions, and works through quantitative problems step by step. It is not a homework-completion tool; it is a learning aid that helps you understand material more deeply so you can produce better work yourself.',
     bullets: ['Explains any academic concept clearly', 'Summarises dense lecture notes in seconds', 'Generates multiple-choice and short-answer practice questions', 'Works through mathematical problems step by step', 'Available 24 hours a day, every day of the semester'],
   },
   {
@@ -42,8 +42,8 @@ const FEATURES = [
     icon: Timer, color: '#fb923c',
     title: 'Pomodoro Study Timer',
     tagline: 'Focused study sessions with structured breaks.',
-    desc: 'The Pomodoro technique divides study time into focused 25-minute intervals separated by 5-minute breaks. After four intervals, a longer 20-minute break follows. Research shows this approach reduces decision fatigue, improves concentration, and prevents the mental exhaustion that comes from studying for hours without stopping. The StudiByte timer implements this automatically and tracks your total study time per session.',
-    bullets: ['25-minute focus intervals with automatic break reminders', 'Tracks total study time per session', 'Helps build consistent daily study habits', 'Reduces procrastination by making starting easier', 'Works offline once the app is installed'],
+    desc: 'The Pomodoro technique splits study time into focused intervals separated by short breaks. Many students find it reduces procrastination and mental fatigue compared with studying for hours without stopping. The StudiByte timer offers three presets (25 minutes of focus with a 5-minute break, 45 with 10, and 60 with 15), switches to a break automatically when a focus session ends, and records each completed session so you can see your study time for today and for the week. You can also link a session to one of your courses and write a goal for it.',
+    bullets: ['Three presets: 25/5, 45/10, and 60/15 minutes', 'Automatic switch to a break when a focus session ends', 'Link each session to a course and set a goal for it', 'Study totals for today, this week, and all time', 'Helps build consistent daily study habits'],
   },
   {
     icon: BookOpen, color: '#22d3ee',
