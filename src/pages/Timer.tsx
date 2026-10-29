@@ -9,6 +9,7 @@ import { QuickNoteModal } from '../components/timer/QuickNoteModal';
 import { generateId } from '../utils/id';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../routes';
+import { localDateISO, localDateDaysAgo } from '../utils/localDate';
 
 type TimerMode = 'study' | 'break';
 
@@ -75,7 +76,7 @@ export default function Timer() {
             playBeep();
             if (mode === 'study') {
               addStudySession({
-                date: new Date().toISOString().split('T')[0],
+                date: localDateISO(),
                 duration: studyMins,
                 type: 'study',
                 courseCode: selectedClass?.courseCode,
@@ -120,13 +121,14 @@ export default function Timer() {
   };
 
   const todayStudy = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDateISO();
     return studySessions.filter(s => s.date === today && s.type === 'study').reduce((sum, s) => sum + s.duration, 0);
   }, [studySessions]);
 
   const weekStudy = useMemo(() => {
-    const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
-    return studySessions.filter(s => s.type === 'study' && new Date(s.date) >= weekAgo).reduce((sum, s) => sum + s.duration, 0);
+    // Last 7 calendar days including today (same window as before, in local time).
+    const weekStart = localDateDaysAgo(6);
+    return studySessions.filter(s => s.type === 'study' && s.date >= weekStart).reduce((sum, s) => sum + s.duration, 0);
   }, [studySessions]);
 
   const ringColor = mode === 'study' ? '#22c55e' : '#3b82f6';

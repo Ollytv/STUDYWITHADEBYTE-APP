@@ -18,9 +18,46 @@ import { db, auth } from '../services/firebase';
 import { TodaysBytes } from '../components/TodaysBytes';
 import { CampusPulseCard } from '../components/news/CampusPulseCard';
 import { setByteCompleted } from '../services/examService';
+import { localDateISO } from '../utils/localDate';
 
+// NOTE: still the UTC date on purpose. Daily Bytes dates come from
+// generateDailyBytes (examScheduler) and are validated server-side, so this
+// must change together with them, not on its own.
 function todayISO(): string {
   return new Date().toISOString().split('T')[0];
+}
+
+// ── Greeting ────────────────────────────────────────────────────────────
+// Uses the user's own device clock/timezone (getHours is local time), and keeps
+// itself current so it never says "afternoon" at night in an app left open.
+// Change GREETING_LATE_NIGHT to e.g. 'Still up?' if you prefer a different tone.
+const GREETING_LATE_NIGHT = 'Good night';
+
+function greetingFor(hour: number): string {
+  if (hour >= 5  && hour < 12) return 'Good morning';
+  if (hour >= 12 && hour < 17) return 'Good afternoon';
+  if (hour >= 17 && hour < 22) return 'Good evening';
+  return GREETING_LATE_NIGHT; // 22:00 – 04:59
+}
+
+function useGreeting(): string {
+  const [greeting, setGreeting] = useState(() => greetingFor(new Date().getHours()));
+
+  useEffect(() => {
+    const update = () => setGreeting(greetingFor(new Date().getHours()));
+    update();
+    const id = window.setInterval(update, 60_000);
+    const onVisible = () => { if (document.visibilityState === 'visible') update(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', update);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', update);
+    };
+  }, []);
+
+  return greeting;
 }
 
 const MOTIVATIONS = [
@@ -116,15 +153,14 @@ export default function Dashboard() {
     [assignments, activeSemester, activeAcademicYear]);
 
   const todayStudyMins = useMemo(() => {
-    const d = new Date().toISOString().split('T')[0];
+    const d = localDateISO(); // matches how Timer saves session dates
     return studySessions.filter(s => s.date === d && s.type === 'study').reduce((sum, s) => sum + s.duration, 0);
   }, [studySessions]);
 
   const motivation = MOTIVATIONS[new Date().getDay() % MOTIVATIONS.length];
   const initials   = profile?.fullName?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'S';
   const firstName  = profile?.fullName?.split(' ')[0] || null;
-  const hour       = new Date().getHours();
-  const greeting   = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const greeting   = useGreeting();
 
   return (
     <div className="min-h-screen bg-surface-base pb-28">
