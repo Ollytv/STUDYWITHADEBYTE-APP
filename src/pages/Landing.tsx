@@ -530,6 +530,7 @@ export default function Landing({ onGetStarted }: { onGetStarted: () => void }) 
       </Section>
 
       {/* ── INSTALL ──────────────────────────────────────────────────────── */}
+      <Section id="install">
         <SectionLabel>Install StudiByte</SectionLabel>
         <motion.h2 className="text-2xl font-black text-white font-display mb-2" style={{ letterSpacing: '-0.8px' }}
           variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
@@ -585,7 +586,7 @@ export default function Landing({ onGetStarted }: { onGetStarted: () => void }) 
             <strong className="font-bold">Why install?</strong> Installing StudiByte gives you faster load times, offline access to your timetable and GPA data, push notifications for class reminders, and a full-screen experience without browser UI in the way.
           </p>
         </motion.div>
-      {/*section bug removed here-- */}
+      </Section>
 
       {/* ── WHY STUDENTS LOVE IT ─────────────────────────────────────────── */}
       <Section>
