@@ -13,13 +13,37 @@ const PRODUCTION_ORIGIN = process.env.VITE_SITE_URL || 'https://studibyte.space'
 const ROUTES = [
   '/',
   '/about',
+  '/features',
+  '/faq',
+  '/support',
+  '/contact',
   '/privacy',
   '/terms',
   '/guides',
   '/guides/active-recall-for-coding',
   '/guides/python-loops-made-easy',
   '/guides/how-to-calculate-cgpa-nigeria',
+  '/guides/build-a-weekly-study-timetable',
+  '/guides/four-week-exam-revision-plan',
+  '/guides/lecture-notes-cornell-method',
+  '/guides/using-ai-to-study-responsibly',
 ];
+
+/**
+ * Guarantees every prerendered page carries its OWN canonical + og:url,
+ * regardless of what the shared index.html shell (which points at the
+ * homepage) or the page's own head management produced.
+ */
+function setCanonical(html, route) {
+  const canonical = route === '/' ? `${PRODUCTION_ORIGIN}/` : `${PRODUCTION_ORIGIN}${route}`;
+  let out = html.replace(/<link[^>]*rel=["']canonical["'][^>]*>\s*/gi, '');
+  out = out.replace('</head>', `  <link rel="canonical" href="${canonical}">\n</head>`);
+  out = out.replace(
+    /(<meta[^>]*property=["']og:url["'][^>]*content=["'])[^"']*(["'][^>]*>)/i,
+    `$1${canonical}$2`,
+  );
+  return out;
+}
 
 async function main() {
   const server = createServer((req, res) => {
@@ -48,6 +72,7 @@ async function main() {
     page.on('requestfailed', req => console.warn(`  [requestfailed] ${req.url()} — ${req.failure()?.errorText}`));
 
     await page.evaluateOnNewDocument(() => {
+      window.__PRERENDER__ = true;
       Object.defineProperty(navigator, 'serviceWorker', {
         value: undefined,
         configurable: true,
@@ -72,6 +97,11 @@ async function main() {
         console.warn(`  ⚠ #root never gained children within 15s for ${route}`);
       });
 
+      // Wait for the real page heading so the splash screen is never captured.
+      await page.waitForSelector('h1', { timeout: 15000 }).catch(() => {
+        console.warn(`  ⚠ no <h1> found within 15s for ${route}`);
+      });
+
       await new Promise(r => setTimeout(r, 1500));
 
       const rootHTML = await page.$eval('#root', el => el.innerHTML).catch(() => '');
@@ -80,7 +110,13 @@ async function main() {
       }
 
       const localOrigin = `http://localhost:${PORT}`;
-      const html = (await page.content()).split(localOrigin).join(PRODUCTION_ORIGIN);
+      const html = setCanonical(
+        (await page.content())
+          .split(localOrigin).join(PRODUCTION_ORIGIN)
+          // also catch the URL-encoded form (e.g. inside ad/iframe query strings)
+          .split(encodeURIComponent(localOrigin)).join(encodeURIComponent(PRODUCTION_ORIGIN)),
+        route,
+      );
 
       const outDir = route === '/' ? DIST : path.join(DIST, route);
       await fs.mkdir(outDir, { recursive: true });

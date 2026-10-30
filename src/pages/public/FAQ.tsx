@@ -46,7 +46,7 @@ const CATEGORIES = [
     label: 'Attendance & Timetable',
     items: [
       { q: 'How does attendance tracking work?', a: 'For every class on your timetable, you tap once to mark it as attended or missed after the class takes place. StudiByte calculates your attendance percentage for each course and displays a colour-coded status. A warning appears when you fall below your configured attendance target, giving you time to prioritise attendance before the minimum threshold is breached.' },
-      { q: 'Can I import my timetable automatically?', a: 'Yes. The timetable import feature uses AI to extract class information from PDF documents, Word files, or screenshot images. It identifies course names, days, times, and venues and populates your timetable automatically. You review all extracted data before saving, so you remain in full control of what is added.' },
+      { q: 'Can I import my timetable automatically?', a: 'Yes. The timetable import feature uses AI to extract class information from a PDF or image (such as a screenshot or a photo of your timetable). It identifies course names, days, times, and venues and populates your timetable automatically. You review all extracted data before saving, so you remain in full control of what is added.' },
       { q: 'Can I get reminders before classes?', a: 'Yes. Once your timetable is set up and push notifications are enabled, StudiByte sends reminders before each scheduled class. You can configure the lead time — 10 minutes, 30 minutes, or 1 hour. Reminders only fire on the days each class is actually scheduled.' },
     ],
   },

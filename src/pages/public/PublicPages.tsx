@@ -40,14 +40,14 @@ export function Contact() {
               icon: Mail, color: '#22c55e', delay: 0,
               title: 'Email Support',
               desc: 'For account issues, bug reports, and general questions, email us directly. Include your account email address and a description of the issue.',
-              detail: 'support@studibyte.app',
+              detail: 'studibyte1@outlook.com',
               sub: 'Best for: account help, technical issues, bug reports',
             },
             {
               icon: MessageSquare, color: '#60a5fa', delay: 0.07,
               title: 'Feature Requests & Feedback',
               desc: 'Have an idea for a feature that would improve StudiByte for students? We genuinely consider all suggestions. Send a brief description of the feature and the problem it would solve.',
-              detail: 'feedback@studibyte.app',
+              detail: 'studibyte1@outlook.com',
               sub: 'Best for: feature suggestions, UX feedback, general product comments',
             },
             {
@@ -292,7 +292,7 @@ export function Support() {
       steps: [
         { step: 'Create your account', desc: 'Go to the StudiByte homepage and click "Get Started." Enter your email address and a password of at least 8 characters. A verification email will be sent to your address.' },
         { step: 'Complete your academic profile', desc: 'After signing in, the onboarding screen asks for your full name, department, academic level, and CGPA scale (3.0, 4.0, or 5.0). This takes under two minutes and calibrates all calculations to your institution.' },
-        { step: 'Build your timetable', desc: 'Navigate to the Timetable tab. Add your classes manually using the + button, or use the Import feature to extract your schedule from a PDF, Word document, or screenshot automatically.' },
+        { step: 'Build your timetable', desc: 'Navigate to the Timetable tab. Add your classes manually using the + button, or use the Import feature to extract your schedule automatically from a PDF or image.' },
         { step: 'Enable class reminders', desc: 'Go to Settings and enable push notifications. Choose whether you want reminders 10 minutes, 30 minutes, or 1 hour before each class. On iOS, Safari will request notification permission when you enable this setting.' },
       ],
     },

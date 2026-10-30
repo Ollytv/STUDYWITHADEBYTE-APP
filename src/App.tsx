@@ -69,7 +69,8 @@ export default function App() {
   }, [settings?.theme]);
 
   // Ads: signed-out visitors on public content pages only, never inside the app.
-  useAdSense(!currentUser && isAdEligiblePath(location.pathname));
+  // Also wait for the splash/auth-loading screen to finish so ads can never load over it.
+  useAdSense(splashDone && !authLoading && !currentUser && isAdEligiblePath(location.pathname));
 
   // ── Gate 1: Splash ────────────────────────────────────────────────────
   if (!splashDone || authLoading) {

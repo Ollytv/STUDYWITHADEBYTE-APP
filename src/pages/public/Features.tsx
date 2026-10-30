@@ -77,8 +77,8 @@ const FEATURES = [
     icon: Search, color: '#e879f9',
     title: 'Smart Timetable Import',
     tagline: 'Build your schedule from a PDF or screenshot.',
-    desc: 'Rather than manually entering each class one by one, StudiByte can extract your timetable from a PDF document, Word file, or screenshot image using AI-powered document parsing. The system identifies course names, days, times, and venues and builds your schedule automatically. You review the extracted data before anything is saved — giving you full control while eliminating the tedious data entry.',
-    bullets: ['Import from PDF, Word document, or image', 'AI extracts course names, times, days, and venues', 'Full review and edit before saving', 'Handles multiple timetable formats', 'Manual entry also available for individual classes'],
+    desc: 'Rather than manually entering each class one by one, StudiByte can extract your timetable from a PDF or image (such as a screenshot or a photo) using AI-powered document parsing. The system identifies course names, days, times, and venues and builds your schedule automatically. You review the extracted data before anything is saved — giving you full control while eliminating the tedious data entry.',
+    bullets: ['Import from a PDF or image', 'AI extracts course names, times, days, and venues', 'Full review and edit before saving', 'Handles multiple timetable formats', 'Manual entry also available for individual classes'],
   },
   {
     icon: Smartphone, color: '#4ade80',

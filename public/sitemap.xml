@@ -5,7 +5,7 @@
   <!-- ── HOMEPAGE ─────────────────────────────────────────────────────────── -->
   <url>
     <loc>https://studibyte.space/</loc>
-    <lastmod>2025-01-01</lastmod>
+    <lastmod>2026-10-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -34,9 +34,58 @@
 
   <url>
     <loc>https://studibyte.space/guides</loc>
-    <lastmod>2026-10-29</lastmod>
+    <lastmod>2026-10-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://studibyte.space/guides/active-recall-for-coding</loc>
+    <lastmod>2026-10-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://studibyte.space/guides/python-loops-made-easy</loc>
+    <lastmod>2026-10-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://studibyte.space/guides/how-to-calculate-cgpa-nigeria</loc>
+    <lastmod>2026-10-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://studibyte.space/guides/build-a-weekly-study-timetable</loc>
+    <lastmod>2026-10-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://studibyte.space/guides/four-week-exam-revision-plan</loc>
+    <lastmod>2026-10-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://studibyte.space/guides/lecture-notes-cornell-method</loc>
+    <lastmod>2026-10-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://studibyte.space/guides/using-ai-to-study-responsibly</loc>
+    <lastmod>2026-10-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
 
   <!-- ── SUPPORT / LEGAL ──────────────────────────────────────────────────── -->

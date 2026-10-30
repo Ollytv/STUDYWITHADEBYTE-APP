@@ -32,6 +32,10 @@ const HIDE_CSS = `
 
 export function useAdSense(enabled: boolean) {
   useEffect(() => {
+    // scripts/prerender.mjs sets this flag so Google's ad script, ad iframes and
+    // tracking markup are never captured into the static HTML.
+    if (typeof window !== 'undefined' && (window as unknown as { __PRERENDER__?: boolean }).__PRERENDER__) return;
+
     const hideStyle = document.getElementById(HIDE_STYLE_ID);
 
     if (!enabled) {

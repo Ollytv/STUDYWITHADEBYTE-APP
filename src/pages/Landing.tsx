@@ -73,6 +73,8 @@ function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
     >
       <button
         onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        aria-controls={`landing-faq-panel-${index}`}
         className="w-full flex items-center justify-between py-4 text-left gap-3 touch-manipulation"
       >
         <span className="text-sm font-semibold text-white font-body leading-snug">{q}</span>
@@ -80,19 +82,17 @@ function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
           <ChevronDown size={15} className="text-dark-500" />
         </motion.div>
       </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden"
-          >
-            <p className="pb-4 text-sm text-dark-400 font-body leading-relaxed pr-6">{a}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* The answer is ALWAYS in the DOM so search engines can read it; it is only collapsed visually. */}
+      <div
+        id={`landing-faq-panel-${index}`}
+        role="region"
+        aria-hidden={!open}
+        className={`grid transition-[grid-template-rows] duration-300 ease-out ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+      >
+        <div className="overflow-hidden">
+          <p className="pb-4 text-sm text-dark-400 font-body leading-relaxed pr-6">{a}</p>
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -544,15 +544,15 @@ export default function Landing({ onGetStarted }: { onGetStarted: () => void }) 
           {[
             {
               icon: Smartphone, color: '#34d399', label: 'Android',
-              steps: ['Open studibyte.app in Chrome', 'Tap the menu (⋮) in the top right', 'Select "Add to Home Screen"', 'Tap Add — done.'],
+              steps: ['Open studibyte.space in Chrome', 'Tap the menu (⋮) in the top right', 'Select "Add to Home Screen"', 'Tap Add — done.'],
             },
             {
               icon: Apple, color: '#9ca3af', label: 'iPhone / iPad',
-              steps: ['Open studibyte.app in Safari', 'Tap the Share button (□↑)', 'Scroll down and tap "Add to Home Screen"', 'Tap Add — done.'],
+              steps: ['Open studibyte.space in Safari', 'Tap the Share button (□↑)', 'Scroll down and tap "Add to Home Screen"', 'Tap Add — done.'],
             },
             {
               icon: Monitor, color: '#60a5fa', label: 'Desktop (Chrome / Edge)',
-              steps: ['Open studibyte.app in Chrome or Edge', 'Click the install icon (⊕) in the address bar', 'Click Install in the popup', 'StudiByte opens as a standalone window.'],
+              steps: ['Open studibyte.space in Chrome or Edge', 'Click the install icon (⊕) in the address bar', 'Click Install in the popup', 'StudiByte opens as a standalone window.'],
             },
           ].map((platform, i) => (
             <motion.div key={platform.label}
@@ -685,9 +685,9 @@ export default function Landing({ onGetStarted }: { onGetStarted: () => void }) 
               <Users size={16} className="text-green-400" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-bold text-white font-display" itemProp="name">[Author Full Name]</p>
+              <p className="text-sm font-bold text-white font-display" itemProp="name">Adegbite Olaoluwa</p>
               <p className="text-xs text-dark-500 font-body" itemProp="jobTitle">
-                [Credential — e.g. B.Sc. Computer Science · Founder &amp; Developer, StudiByte]
+                Founder &amp; Developer, StudiByte
               </p>
             </div>
           </div>
